@@ -1,4 +1,4 @@
-import api from "./api";
+import api from "./interceptor";
 
 export const createEvent = async (data: { title: string; description: string; date_time: Date; location: string }) => {
     try {
