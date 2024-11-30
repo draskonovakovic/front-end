@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import Navbar from "./navbar/page";
+import { AuthProvider } from "@/context/AuthContext"; 
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -14,8 +16,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Event Planning App',
-  description: 'Planiranje događaja sa stilom!',
+  title: "Event Planning App",
+  description: "Planiranje događaja sa stilom!",
 };
 
 export default function RootLayout({
@@ -28,7 +30,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthProvider> 
+          <Navbar />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

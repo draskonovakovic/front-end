@@ -19,7 +19,9 @@ export default function RegisterPage() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<FormData>();
+  } = useForm<FormData>({
+    mode: "onBlur",  
+  });
 
   const onSubmit = async (data: FormData) => {
     try {
