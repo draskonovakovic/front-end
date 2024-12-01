@@ -20,22 +20,6 @@ export default function LoginPage() {
   const { login } = useAuth(); // Koristi login funkciju iz AuthContext-a
   const router = useRouter();
 
-  useEffect(() => {
-    connectSocket();
-
-    socket.on('connect', () => {
-      console.log('WebSocket connected:', socket.id);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
-    });
-
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
-
   const onSubmit = async (data: FormData) => {
     try {
       const response = await loginUser(data); 

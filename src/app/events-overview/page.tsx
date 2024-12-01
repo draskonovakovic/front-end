@@ -7,6 +7,7 @@ import { createEvent } from '@/lib/event';
 import { getAllEvents } from '@/lib/event';
 import withAuthGuard from '@/guard/authGuard';
 import { useRouter } from 'next/navigation';
+import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 
 type EventData = {
     id: number;
@@ -23,7 +24,7 @@ type FormData = {
   location: string;
 };
 
-function CreateEventModal() {
+function EventOverview() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<EventData[]>([]);
@@ -55,6 +56,8 @@ function CreateEventModal() {
   }, [router]);
 
   useEffect(() => {
+    connectSocket()
+    
     const fetchEvents = async () => {
       try {
         const data = await getAllEvents();
@@ -63,7 +66,17 @@ function CreateEventModal() {
         alert(error.message);
       }
     };
-        fetchEvents();
+    fetchEvents();
+
+    socket.on('newEvent', (newEvent: EventData) => {
+      setEvents((prevEvents) => [...prevEvents, newEvent]);
+    });
+
+    return () => {
+      socket.off('newEvent');
+      disconnectSocket();
+    };
+
     }, []);
 
   const onSubmit = async (data: FormData) => {
@@ -254,4 +267,4 @@ function CreateEventModal() {
   );
 }
 
-export default withAuthGuard(CreateEventModal);
+export default withAuthGuard(EventOverview);
