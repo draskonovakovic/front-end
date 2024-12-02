@@ -1,6 +1,6 @@
 import api from "./interceptor";
 
-export const createEvent = async (data: { title: string; description: string; date_time: Date; location: string }) => {
+export const createEvent = async (data: { title: string; description: string; date_time: Date; location: string, type: string }) => {
     try {
       const response = await api.post("/events/", data);
       return response.data;

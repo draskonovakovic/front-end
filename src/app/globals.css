@@ -19,3 +19,19 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.fc-event {
+  background-color: green !important; /* Definiši boju pozadine događaja */
+  color: white !important; /* Tekst na događaju */
+  border: 1px solid darkgreen !important; /* Granica događaja */
+  border-radius: 4px !important; /* Zaobljeni ivice */
+  padding: 2px 4px !important; /* Razmak unutar događaja */
+}
+
+.fc-daygrid-event {
+  display: block !important; /* Osigurava da događaji nisu prikazani kao tačke */
+}
+
+.fc-daygrid-event-dot {
+  display: none !important; /* Sakrij tačke ako postoje */
+}

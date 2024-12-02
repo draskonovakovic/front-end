@@ -1,20 +1,24 @@
 'use client';
 
+import React, { useEffect, useState, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { createEvent } from '@/lib/event';
-import { getAllEvents } from '@/lib/event';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin from '@fullcalendar/interaction';
 import withAuthGuard from '@/guard/authGuard';
-import { useRouter } from 'next/navigation';
+import { createEvent, getAllEvents } from '@/lib/event';
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
+import { useRouter } from 'next/navigation';
 
 type EventData = {
-    id: number;
-    title: string;
-    description: string;
-    date_time: string;
-    location: string;
+  id: number;
+  title: string;
+  description: string;
+  date_time: string;
+  location: string;
+  type: string;
 };
 
 type FormData = {
@@ -22,20 +26,22 @@ type FormData = {
   description: string;
   dateTime: Date;
   location: string;
+  type: string;
 };
 
 function EventOverview() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [events, setEvents] = useState<EventData[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+
+  const eventTypes = ['Meeting', 'Workshop', 'Conference', 'Webinar', 'Social Event'];
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
-    mode: 'onBlur',
-  });
+  } = useForm<FormData>({ mode: 'onBlur' });
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -44,7 +50,7 @@ function EventOverview() {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'authToken' && !event.newValue) {
         setIsAuthenticated(false);
-        router.replace('/login'); 
+        router.replace('/login');
       }
     };
 
@@ -56,28 +62,50 @@ function EventOverview() {
   }, [router]);
 
   useEffect(() => {
-    connectSocket()
-    
+    connectSocket();
+
     const fetchEvents = async () => {
       try {
         const data = await getAllEvents();
-        setEvents(data);
-      } catch (error: any) {
-        alert(error.message);
+        const formattedEvents = data.map((event: EventData) => ({
+          id: event.id,
+          title: event.title,
+          start: event.date_time,
+          extendedProps: {
+            description: event.description,
+            location: event.location,
+            type: event.type,
+          },
+        }));
+        setEvents(formattedEvents);
+      } catch (error) {
+        console.error('Error fetching events:', error);
       }
     };
     fetchEvents();
 
     socket.on('newEvent', (newEvent: EventData) => {
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
+      setEvents((prevEvents) => [
+        ...prevEvents,
+        {
+          id: newEvent.id,
+          title: newEvent.title,
+          start: newEvent.date_time,
+          end: newEvent.date_time,
+          extendedProps: {
+            description: newEvent.description,
+            location: newEvent.location,
+            type: newEvent.type,
+          },
+        },
+      ]);
     });
 
     return () => {
       socket.off('newEvent');
       disconnectSocket();
     };
-
-    }, []);
+  }, []);
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -86,6 +114,7 @@ function EventOverview() {
         description: data.description,
         date_time: data.dateTime,
         location: data.location,
+        type: data.type, 
       });
       alert('Event created successfully!');
       setIsOpen(false);
@@ -94,46 +123,42 @@ function EventOverview() {
     }
   };
 
+  const handleEventClick = (info: any) => {
+    const event = info.event;
+    alert(
+      `Event Details:
+      Title: ${event.title}
+      Description: ${event.extendedProps.description}
+      Location: ${event.extendedProps.location}
+      Type: ${event.extendedProps.type}`
+    );
+  };
+
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">All Events</h1>
+      <h1 className="text-2xl font-bold mb-4">Event Calendar</h1>
 
-      {/* Events Table */}
-      <div className="overflow-x-auto">
-        <table className="table-auto w-full border-collapse border border-gray-200">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 px-4 py-2">Title</th>
-              <th className="border border-gray-300 px-4 py-2">Description</th>
-              <th className="border border-gray-300 px-4 py-2">Date & Time</th>
-              <th className="border border-gray-300 px-4 py-2">Location</th>
-            </tr>
-          </thead>
-          <tbody>
-          {Array.isArray(events) && events.length > 0 ? (
-              events.map((event) => (
-                <tr key={event.id}>
-                  <td className="border border-gray-300 px-4 py-2">{event.title}</td>
-                  <td className="border border-gray-300 px-4 py-2">{event.description}</td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {new Date(event.date_time).toLocaleString()}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">{event.location}</td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={4} className="text-center py-4">No events found</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Calendar */}
+      <FullCalendar
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        initialView="dayGridMonth"
+        events={events}
+        eventColor="green"
+        eventClick={handleEventClick}
+        headerToolbar={{
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay',
+        }}
+        editable={true}
+        selectable={true}
+        height="auto"
+      />
 
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 bg-green-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none"
+        className="fixed bottom-8 right-8 bg-green-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none z-50"
       >
         <span className="text-2xl font-bold">+</span>
       </button>
@@ -171,8 +196,8 @@ function EventOverview() {
                   >
                     Create Event
                   </Dialog.Title>
-
                   <form onSubmit={handleSubmit(onSubmit)}>
+                    {/* Title */}
                     <div className="mb-4">
                       <label htmlFor="title" className="block text-sm font-medium mb-1">
                         Title
@@ -186,33 +211,38 @@ function EventOverview() {
                         }`}
                       />
                       {errors.title && (
-                        <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.title.message}
+                        </p>
                       )}
                     </div>
 
+                    {/* Description */}
                     <div className="mb-4">
                       <label htmlFor="description" className="block text-sm font-medium mb-1">
                         Description
                       </label>
-                      <input
+                      <textarea
                         {...register('description', { required: 'Description is required' })}
-                        type="text"
                         id="description"
                         className={`w-full px-3 py-2 border rounded ${
                           errors.description ? 'border-red-500' : 'border-gray-300'
                         }`}
-                      />
+                      ></textarea>
                       {errors.description && (
-                        <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.description.message}
+                        </p>
                       )}
                     </div>
 
+                    {/* DateTime */}
                     <div className="mb-4">
                       <label htmlFor="dateTime" className="block text-sm font-medium mb-1">
                         Date and Time
                       </label>
                       <input
-                        {...register('dateTime', { required: 'Date and time is required' })}
+                        {...register('dateTime', { required: 'Date and Time are required' })}
                         type="datetime-local"
                         id="dateTime"
                         className={`w-full px-3 py-2 border rounded ${
@@ -220,10 +250,13 @@ function EventOverview() {
                         }`}
                       />
                       {errors.dateTime && (
-                        <p className="text-red-500 text-sm mt-1">{errors.dateTime.message}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.dateTime.message}
+                        </p>
                       )}
                     </div>
 
+                    {/* Location */}
                     <div className="mb-4">
                       <label htmlFor="location" className="block text-sm font-medium mb-1">
                         Location
@@ -237,25 +270,44 @@ function EventOverview() {
                         }`}
                       />
                       {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.location.message}
+                        </p>
                       )}
                     </div>
 
-                    <div className="flex justify-end">
-                      <button
-                        type="button"
-                        className="mr-2 px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                        onClick={() => setIsOpen(false)}
+                    {/* Type */}
+                    <div className="mb-4">
+                      <label htmlFor="type" className="block text-sm font-medium mb-1">
+                        Type
+                      </label>
+                      <select
+                        {...register('type', { required: 'Type is required' })}
+                        id="type"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.type ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                      >
-                        Create
-                      </button>
+                        <option value="">Select Type</option>
+                        {eventTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.type && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.type.message}
+                        </p>
+                      )}
                     </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition"
+                    >
+                      Save
+                    </button>
                   </form>
                 </Dialog.Panel>
               </Transition.Child>

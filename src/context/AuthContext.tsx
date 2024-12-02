@@ -18,7 +18,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const token = localStorage.getItem('authToken');
     setIsAuthenticated(!!token);
 
-    // Osluškivanje promena u `localStorage`
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'authToken') {
         setIsAuthenticated(!!event.newValue);
@@ -39,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     await logoutUser();
-    localStorage.removeItem('authToken'); // Ukloni token prilikom logouta
+    localStorage.removeItem('authToken'); 
     setIsAuthenticated(false);
   };
 

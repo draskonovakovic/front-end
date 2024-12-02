@@ -14,7 +14,7 @@ export const loginUser = async (data: { email: string; password: string }) => {
     const response = await api.post('/auth/login', data);
     const { token } = response.data;
 
-    localStorage.setItem('authToken', token); // Čuva token
+    localStorage.setItem('authToken', token); 
     return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'An error occurred during login.');

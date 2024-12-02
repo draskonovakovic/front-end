@@ -24,7 +24,7 @@ const withAuthGuard = (WrappedComponent: React.ComponentType) => {
                 setIsAuthenticated(true);
               } else {
                 localStorage.removeItem('authToken');
-                router.replace('/'); // Ovde ruter funkcioniše
+                router.replace('/'); 
               }
             }
           }, [router]);

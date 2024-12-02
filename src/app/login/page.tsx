@@ -17,7 +17,7 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     mode: 'onBlur',
   });
-  const { login } = useAuth(); // Koristi login funkciju iz AuthContext-a
+  const { login } = useAuth(); 
   const router = useRouter();
 
   const onSubmit = async (data: FormData) => {
