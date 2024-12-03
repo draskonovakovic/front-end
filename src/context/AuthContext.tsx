@@ -7,14 +7,14 @@ import { clearAuthToken, getAuthToken } from '@/utilis/authHelpers';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
-  login: (email: string, password: string) => void;
+  login: () => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const token = getAuthToken();
@@ -43,10 +43,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     clearAuthToken(); 
     setIsAuthenticated(false);
   };
-
-  if (isAuthenticated === null) {
-    return <div>Loading...</div>; 
-  }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>

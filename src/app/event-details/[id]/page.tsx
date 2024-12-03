@@ -1,57 +1,97 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation'; 
+import { useParams, useRouter } from 'next/navigation'; 
 import { getEventById } from '@/lib/event'; 
 import { getUserById } from '@/lib/user'; 
-import { useAuth } from '@/context/AuthContext'; 
-import { useRouter } from 'next/navigation';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { getAuthToken } from '@/utilis/authHelpers';
 
 function EventDetails() {
   const { id } = useParams(); 
-  const { isAuthenticated } = useAuth(); 
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
   const [event, setEvent] = useState<any>(null);
   const [user, setUser] = useState<any>(null); 
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login'); 
-      return;
-    }
-
-    if (id) {
-      const fetchEvent = async () => {
-        try {
-          const eventData = await getEventById(+id); 
-          setEvent(eventData);
-
-          if (eventData && eventData.creator_id) {
-            const userData = await getUserById(eventData.creator_id); 
-            setUser(userData);
-          }
-        } catch (error) {
-          console.error('Error fetching event:', error);
-        }
-      };
-      fetchEvent();
-    }
-  }, [id, isAuthenticated, router]);
+  const [loading, setLoading] = useState(true); 
+  const [error, setError] = useState<string | null>(null);
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true, 
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true, 
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 
-  if (!event || !user) return <div>Loading...</div>;
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
+      setIsAuthenticated(false);
+      router.replace('/login');
+    }
+  };
+
+  const fetchEventData = async (eventId: string | string[]) => {
+    try {
+      const eventData = await getEventById(+eventId);
+      if (!eventData) {
+        throw new Error("Event not found");
+      }
+      setEvent(eventData);
+
+      if (eventData.creator_id) {
+        const userData = await getUserById(eventData.creator_id);
+        if (!userData) {
+          throw new Error("User not found");
+        }
+        setUser(userData);
+      }
+    } catch (err: any) {
+      console.error("Error fetching event data:", err.message || err);
+      setError(err.message || "Failed to load event data.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
+
+    if (id) {
+      fetchEventData(id);
+    } else {
+      setError("Invalid event ID.");
+      setLoading(false);
+    }
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [id]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (!event || !user) {
+    return <div className="text-red-500">Unexpected error occurred.</div>;
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen flex items-center justify-center">
