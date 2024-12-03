@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { logoutUser } from '@/lib/auth';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { clearAuthToken, getAuthToken } from '@/utilis/authHelpers';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
@@ -15,11 +17,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     setIsAuthenticated(!!token);
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'authToken') {
+      if (event.key === STORAGE_KEYS.AUTH_TOKEN) {
         setIsAuthenticated(!!event.newValue);
       }
     };
@@ -32,13 +34,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = () => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     setIsAuthenticated(!!token);
   };
 
   const logout = async () => {
     await logoutUser();
-    localStorage.removeItem('authToken'); 
+    clearAuthToken(); 
     setIsAuthenticated(false);
   };
 

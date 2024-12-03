@@ -11,15 +11,10 @@ import withAuthGuard from '@/guard/authGuard';
 import { createEvent, getAllEvents } from '@/lib/event';
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
-
-type EventData = {
-  id: number;
-  title: string;
-  description: string;
-  date_time: string;
-  location: string;
-  type: string;
-};
+import { EventData } from '@/types/event';
+import { EVENT_TYPES } from '@/constants/eventTypes';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { getAuthToken } from '@/utilis/authHelpers';
 
 type FormData = {
   title: string;
@@ -29,13 +24,25 @@ type FormData = {
   type: string;
 };
 
+type CalendarEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  extendedProps: {
+    description: string;
+    location: string;
+    type: string;
+  };
+};
+
 function EventOverview() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [events, setEvents] = useState<any[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const eventTypes = ['Meeting', 'Workshop', 'Conference', 'Webinar', 'Social Event'];
+  const eventTypes = EVENT_TYPES;
 
   const {
     register,
@@ -44,11 +51,11 @@ function EventOverview() {
   } = useForm<FormData>({ mode: 'onBlur' });
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     setIsAuthenticated(!!token);
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'authToken' && !event.newValue) {
+      if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
         setIsAuthenticated(false);
         router.replace('/login');
       }
@@ -88,7 +95,7 @@ function EventOverview() {
       setEvents((prevEvents) => [
         ...prevEvents,
         {
-          id: newEvent.id,
+          id: newEvent.id.toString(),
           title: newEvent.title,
           start: newEvent.date_time,
           end: newEvent.date_time,
@@ -109,19 +116,26 @@ function EventOverview() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      await createEvent({
+      const response = await createEvent({
         title: data.title,
         description: data.description,
         date_time: data.dateTime,
         location: data.location,
-        type: data.type, 
+        type: data.type,
       });
+  
+      console.log("Kreirani event: ", response)
+      if (!response.success) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+  
       alert('Event created successfully!');
       setIsOpen(false);
     } catch (error: any) {
-      alert(error.message);
+      const errorMessage = error?.message || 'An unknown error occurred';
+      alert(`Failed to create event: ${errorMessage}`);
     }
-  };
+  };  
 
   const handleEventClick = (info: any) => {
     const event = info.event;
@@ -190,10 +204,7 @@ function EventOverview() {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900 mb-4"
-                  >
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
                     Create Event
                   </Dialog.Title>
                   <form onSubmit={handleSubmit(onSubmit)}>
@@ -203,7 +214,10 @@ function EventOverview() {
                         Title
                       </label>
                       <input
-                        {...register('title', { required: 'Title is required' })}
+                        {...register('title', {
+                          required: 'Title is required',
+                          minLength: { value: 3, message: 'Title must be at least 3 characters' },
+                        })}
                         type="text"
                         id="title"
                         className={`w-full px-3 py-2 border rounded ${
@@ -211,9 +225,7 @@ function EventOverview() {
                         }`}
                       />
                       {errors.title && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.title.message}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
                       )}
                     </div>
 
@@ -223,16 +235,17 @@ function EventOverview() {
                         Description
                       </label>
                       <textarea
-                        {...register('description', { required: 'Description is required' })}
+                        {...register('description', {
+                          required: 'Description is required',
+                          minLength: { value: 10, message: 'Description must be at least 10 characters' },
+                        })}
                         id="description"
                         className={`w-full px-3 py-2 border rounded ${
                           errors.description ? 'border-red-500' : 'border-gray-300'
                         }`}
                       ></textarea>
                       {errors.description && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.description.message}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
                       )}
                     </div>
 
@@ -242,7 +255,15 @@ function EventOverview() {
                         Date and Time
                       </label>
                       <input
-                        {...register('dateTime', { required: 'Date and Time are required' })}
+                        {...register('dateTime', {
+                          required: 'Date and Time are required',
+                          validate: {
+                            isValidDate: (value) => {
+                              const date = new Date(value);
+                              return date > new Date() || 'Date and Time must be in the future';
+                            },
+                          },
+                        })}
                         type="datetime-local"
                         id="dateTime"
                         className={`w-full px-3 py-2 border rounded ${
@@ -250,9 +271,7 @@ function EventOverview() {
                         }`}
                       />
                       {errors.dateTime && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.dateTime.message}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.dateTime.message}</p>
                       )}
                     </div>
 
@@ -262,7 +281,10 @@ function EventOverview() {
                         Location
                       </label>
                       <input
-                        {...register('location', { required: 'Location is required' })}
+                        {...register('location', {
+                          required: 'Location is required',
+                          minLength: { value: 3, message: 'Location must be at least 3 characters' },
+                        })}
                         type="text"
                         id="location"
                         className={`w-full px-3 py-2 border rounded ${
@@ -270,9 +292,7 @@ function EventOverview() {
                         }`}
                       />
                       {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.location.message}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
                       )}
                     </div>
 
@@ -282,7 +302,13 @@ function EventOverview() {
                         Type
                       </label>
                       <select
-                        {...register('type', { required: 'Type is required' })}
+                        {...register('type', {
+                          required: 'Type is required',
+                          validate: {
+                            isValidType: (value) =>
+                              eventTypes.includes(value) || `Type must be one of: ${eventTypes.join(', ')}`,
+                          },
+                        })}
                         id="type"
                         className={`w-full px-3 py-2 border rounded ${
                           errors.type ? 'border-red-500' : 'border-gray-300'
@@ -296,9 +322,7 @@ function EventOverview() {
                         ))}
                       </select>
                       {errors.type && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.type.message}
-                        </p>
+                        <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
                       )}
                     </div>
 
