@@ -18,3 +18,13 @@ export const getAllEvents = async () => {
       throw new Error(error.response?.data?.message || "An error occurred while getting events.");
     }
 };
+
+export const getEventById = async (id: number) => {
+  try {
+    const response = await api.get("/events/" + id);
+    console.log(response.data); 
+    return response.data.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "An error occurred while getting event.");
+  }
+};

@@ -4,8 +4,6 @@ import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { loginUser } from '@/lib/auth';
-import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 
 type FormData = {
   email: string;
@@ -17,21 +15,28 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     mode: 'onBlur',
   });
-  const { login } = useAuth(); 
+  const { login, isAuthenticated } = useAuth();  
   const router = useRouter();
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await loginUser(data); 
-      console.log('Login successful:', response);
-  
-      login();
-  
-      router.push('/events-overview'); 
+      await login(data.email, data.password);  
+
+      if (isAuthenticated) {
+        router.push('/events-overview');  // Ako je korisnik autentifikovan, preusmeravamo ga
+      } else {
+        setServerError('Login failed, please try again.');  // U slučaju greške
+      } 
     } catch (error: any) {
-      setServerError(error.message);
+      setServerError(error.message);  
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/events-overview');  // Preusmeravanje samo kada se status autentifikacije promeni na true
+    }
+  }, [isAuthenticated, router]);
 
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">

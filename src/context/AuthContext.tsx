@@ -1,26 +1,30 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { logoutUser } from '@/lib/auth';
+import { loginUser, logoutUser } from '@/lib/auth';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
-  login: () => void;
+  login: (email: string, password: string) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);  
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token);
+    if (token) {
+      setIsAuthenticated(true);  
+    } else {
+      setIsAuthenticated(false); 
+    }
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'authToken') {
-        setIsAuthenticated(!!event.newValue);
+        setIsAuthenticated(!!event.newValue); 
       }
     };
 
@@ -31,16 +35,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const login = () => {
-    const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token);
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await loginUser({ email, password });
+      setIsAuthenticated(true);  
+    } catch (error: any) {
+      console.error("Login failed:", error.message);
+    }
   };
 
   const logout = async () => {
     await logoutUser();
-    localStorage.removeItem('authToken'); 
+    localStorage.removeItem('authToken');
     setIsAuthenticated(false);
   };
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>; 
+  }
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>

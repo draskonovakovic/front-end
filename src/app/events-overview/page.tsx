@@ -19,14 +19,17 @@ type EventData = {
   date_time: string;
   location: string;
   type: string;
+  creator_id: number;
 };
 
 type FormData = {
+  id: number;
   title: string;
   description: string;
   dateTime: Date;
   location: string;
   type: string;
+  creator_id: number;
 };
 
 function EventOverview() {
@@ -124,14 +127,8 @@ function EventOverview() {
   };
 
   const handleEventClick = (info: any) => {
-    const event = info.event;
-    alert(
-      `Event Details:
-      Title: ${event.title}
-      Description: ${event.extendedProps.description}
-      Location: ${event.extendedProps.location}
-      Type: ${event.extendedProps.type}`
-    );
+    const eventId = info.event.id; 
+    router.push(`/event-details/${eventId}`); 
   };
 
   return (

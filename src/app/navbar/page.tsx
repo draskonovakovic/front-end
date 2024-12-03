@@ -28,12 +28,20 @@ export default function Navbar() {
 
         <div className="space-x-4">
           {isAuthenticated ? (
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
-            >
-              Logout
-            </button>
+            <>
+              <button
+                onClick={() => router.push('/events-overview')}
+                className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition"
+              >
+                Event Overview
+              </button>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <>
               <button
