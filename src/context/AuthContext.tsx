@@ -1,7 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, logoutUser } from '@/lib/auth';
+import { logoutUser } from '@/lib/auth';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { clearAuthToken, getAuthToken } from '@/utilis/authHelpers';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
@@ -15,16 +17,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);  
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      setIsAuthenticated(true);  
-    } else {
-      setIsAuthenticated(false); 
-    }
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
 
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'authToken') {
-        setIsAuthenticated(!!event.newValue); 
+      if (event.key === STORAGE_KEYS.AUTH_TOKEN) {
+        setIsAuthenticated(!!event.newValue);
       }
     };
 
@@ -35,18 +33,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await loginUser({ email, password });
-      setIsAuthenticated(true);  
-    } catch (error: any) {
-      console.error("Login failed:", error.message);
-    }
+  const login = () => {
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
   };
 
   const logout = async () => {
     await logoutUser();
-    localStorage.removeItem('authToken');
+    clearAuthToken(); 
     setIsAuthenticated(false);
   };
 

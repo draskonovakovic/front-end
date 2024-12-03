@@ -11,7 +11,7 @@ type FormData = {
 };
 
 export default function LoginPage() {
-  const [serverError, setServerError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | ''>('');
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     mode: 'onBlur',
   });
