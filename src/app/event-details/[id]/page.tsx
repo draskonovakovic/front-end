@@ -91,17 +91,29 @@ function EventDetails() {
 
   const handleSaveChanges = async () => {
     try {
-      if (updatedEvent) {
-        await updateEvent(updatedEvent.id, updatedEvent); 
-        setEvent(updatedEvent);
-        setIsUpdateModalOpen(false);
-        alert('Event updated successfully!');
+      if (!updatedEvent) {
+        throw new Error("updatedEvent is undefined");
       }
-    } catch (error) {
-      console.error('Error updating event:', error);
-      alert('Failed to update event.');
+
+      if (!updatedEvent.id) {
+        throw new Error("Event ID is missing");
+      }
+
+      const response = await updateEvent(updatedEvent.id, updatedEvent);
+
+      if (!response) {
+        throw new Error("No response received from updateEvent API");
+      }
+
+      setEvent(updatedEvent);
+      setIsUpdateModalOpen(false);
+      alert('Event updated successfully!');
+    } catch (error: any) {
+      console.error('Error updating event:', error.message || error);
+      alert(`Failed to update event: ${error.message || 'Unknown error'}`);
     }
   };
+
 
   useEffect(() => {
     const token = getAuthToken();

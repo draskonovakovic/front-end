@@ -38,7 +38,6 @@ export const getEventById = async (id: number) => {
 
 export const updateEvent = async (id: number, data: { title: string; description: string; date_time: Date; location: string, type: string }) => {
   try {
-    console.log(data)
     const response = await api.put(`/events/${id}`, data);
     if (!response || !response.data) {
       throw new Error("Unexpected response: Response or data is undefined.");
