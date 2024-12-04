@@ -17,11 +17,13 @@ import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
 
 type FormData = {
+  id: number;
   title: string;
   description: string;
   dateTime: Date;
   location: string;
   type: string;
+  creator_id: number;
 };
 
 type CalendarEvent = {
@@ -138,15 +140,24 @@ function EventOverview() {
   };  
 
   const handleEventClick = (info: any) => {
-    const event = info.event;
-    alert(
-      `Event Details:
-      Title: ${event.title}
-      Description: ${event.extendedProps.description}
-      Location: ${event.extendedProps.location}
-      Type: ${event.extendedProps.type}`
-    );
+    try {
+      if (!info?.event) {
+        throw new Error("Event information is missing.");
+      }
+  
+      const eventId = info.event.id;
+  
+      if (!eventId) {
+        throw new Error("Event ID is missing.");
+      }
+  
+      router.push(`/event-details/${eventId}`);
+    } catch (error: any) {
+      console.error("Error in handleEventClick:", error.message || error);
+      alert(`Failed to navigate to event details: ${error.message || "Unknown error occurred."}`);
+    }
   };
+  
 
   return (
     <div className="p-4">

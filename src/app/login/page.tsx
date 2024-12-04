@@ -24,9 +24,9 @@ export default function LoginPage() {
     try {
       const response = await loginUser(data); 
       console.log('Login successful:', response);
-  
-      login();
-  
+
+      login()
+
       router.push('/events-overview'); 
     } catch (error: any) {
       setServerError(error.message);

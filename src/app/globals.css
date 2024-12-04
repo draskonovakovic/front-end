@@ -21,17 +21,17 @@ body {
 }
 
 .fc-event {
-  background-color: green !important; /* Definiši boju pozadine događaja */
-  color: white !important; /* Tekst na događaju */
-  border: 1px solid darkgreen !important; /* Granica događaja */
-  border-radius: 4px !important; /* Zaobljeni ivice */
-  padding: 2px 4px !important; /* Razmak unutar događaja */
+  background-color: green !important; 
+  color: white !important; 
+  border: 1px solid darkgreen !important; 
+  border-radius: 4px !important; 
+  padding: 2px 4px !important; 
 }
 
 .fc-daygrid-event {
-  display: block !important; /* Osigurava da događaji nisu prikazani kao tačke */
+  display: block !important; 
 }
 
 .fc-daygrid-event-dot {
-  display: none !important; /* Sakrij tačke ako postoje */
+  display: none !important; 
 }
