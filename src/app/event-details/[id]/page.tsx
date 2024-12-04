@@ -6,19 +6,27 @@ import { getEventById } from '@/lib/event';
 import { getUserById } from '@/lib/user'; 
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
+import { EventData } from '@/types/event';
+import { UserData } from '@/types/user';
 
 function EventDetails() {
   const { id } = useParams(); 
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false); 
-  const [event, setEvent] = useState<any>(null);
-  const [user, setUser] = useState<any>(null); 
+  const [event, setEvent] = useState<EventData>();
+  const [user, setUser] = useState<UserData>(); 
   const [loading, setLoading] = useState(true); 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | ''>('');
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined) => {
     try {
+      if (!dateString) {
+        throw new Error("Date string is null or undefined");
+      }
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        throw new Error("Invalid Date");
+      }
       return date.toLocaleString('en-US', {
         month: '2-digit',
         day: '2-digit',
@@ -26,13 +34,14 @@ function EventDetails() {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true, 
+        hour12: true,
       });
     } catch (error) {
       console.error("Error formatting date:", error);
       return "Invalid date";
     }
   };
+  
 
   const handleStorageChange = (event: StorageEvent) => {
     if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
