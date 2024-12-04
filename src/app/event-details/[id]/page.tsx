@@ -109,15 +109,18 @@ function EventDetails() {
         throw new Error("No response received from updateEvent API");
       }
 
-      setEvent(updatedEvent);
-      setIsUpdateModalOpen(false);
-      alert('Event updated successfully!');
+      handleSuccess(updatedEvent);
     } catch (error: any) {
       console.error('Error updating event:', error.message || error);
       alert(`Failed to update event: ${error.message || 'Unknown error'}`);
     }
   };
 
+  const handleSuccess = (updatedEvent: EventData) => {
+    setEvent(updatedEvent);
+    setIsUpdateModalOpen(false);
+    alert('Event updated successfully!');
+  };
 
   useEffect(() => {
     const token = getAuthToken();
