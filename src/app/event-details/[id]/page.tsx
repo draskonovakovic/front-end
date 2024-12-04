@@ -19,7 +19,7 @@ function EventDetails() {
   const [loading, setLoading] = useState(true); 
   const [error, setError] = useState<string | ''>('');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [updatedEvent, setUpdatedEvent] = useState<any>(null);
+  const [updatedEvent, setUpdatedEvent] = useState<EventData>();
 
   const formatDate = (dateString: string | null | undefined) => {
     try {
@@ -106,14 +106,20 @@ function EventDetails() {
   useEffect(() => {
     const token = getAuthToken();
     setIsAuthenticated(!!token);
-
-    if (id) {
-      fetchEventData(id);
-    } else {
-      setError('Invalid event ID.');
+  
+    if (!id) {
+      setError("Undefined event ID.");
       setLoading(false);
+      return; 
     }
-
+  
+    fetchEventData(id);
+  
+    const handleStorageChange = () => {
+      const updatedToken = getAuthToken();
+      setIsAuthenticated(!!updatedToken);
+    };
+  
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -143,7 +149,7 @@ function EventDetails() {
           <p className="text-lg font-medium text-gray-800">Description: <span className="text-gray-600">{event.description}</span></p>
           <p className="text-lg font-medium text-gray-800">Location: <span className="text-gray-600">{event.location}</span></p>
           <p className="text-lg font-medium text-gray-800">Type: <span className="text-gray-600">{event.type}</span></p>
-          <p className="text-lg font-medium text-gray-800">Date: <span className="text-gray-600">{formatDate(event.date_time)}</span></p>
+          <p className="text-lg font-medium text-gray-800">Date: <span className="text-gray-600">{formatDate(event.date_time.toString())}</span></p>
         </div>
 
         {/* Divider */}
@@ -174,14 +180,14 @@ function EventDetails() {
                   <input
                     type="text"
                     name="title"
-                    value={updatedEvent.title}
+                    value={updatedEvent?.title}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-2 border rounded ${
-                      updatedEvent.title?.trim().length >= 3 ? 'border-gray-300' : 'border-red-500'
+                      updatedEvent!.title?.trim().length >= 3 ? 'border-gray-300' : 'border-red-500'
                     }`}
                     placeholder="Enter title"
                   />
-                  {updatedEvent.title?.trim().length < 3 && (
+                  {updatedEvent!.title?.trim().length < 3 && (
                     <p className="text-red-500 text-sm">Title must be at least 3 characters long.</p>
                   )}
                 </div>
@@ -191,14 +197,14 @@ function EventDetails() {
                   <label className="block text-sm font-medium mb-1">Description</label>
                   <textarea
                     name="description"
-                    value={updatedEvent.description}
+                    value={updatedEvent?.description}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-2 border rounded ${
-                      updatedEvent.description?.trim().length >= 10 ? 'border-gray-300' : 'border-red-500'
+                      updatedEvent!.description?.trim().length >= 10 ? 'border-gray-300' : 'border-red-500'
                     }`}
                     placeholder="Enter description"
                   />
-                  {updatedEvent.description?.trim().length < 10 && (
+                  {updatedEvent!.description?.trim().length < 10 && (
                     <p className="text-red-500 text-sm">Description must be at least 10 characters long.</p>
                   )}
                 </div>
@@ -209,14 +215,14 @@ function EventDetails() {
                   <input
                     type="text"
                     name="location"
-                    value={updatedEvent.location}
+                    value={updatedEvent?.location}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-2 border rounded ${
-                      updatedEvent.location?.trim().length >= 3 ? 'border-gray-300' : 'border-red-500'
+                      updatedEvent!.location?.trim().length >= 3 ? 'border-gray-300' : 'border-red-500'
                     }`}
                     placeholder="Enter location"
                   />
-                  {updatedEvent.location?.trim().length < 3 && (
+                  {updatedEvent!.location?.trim().length < 3 && (
                     <p className="text-red-500 text-sm">Location must be at least 3 characters long.</p>
                   )}
                 </div>
@@ -226,7 +232,7 @@ function EventDetails() {
                   <label className="block text-sm font-medium mb-1">Type</label>
                   <select
                     name="type"
-                    value={updatedEvent.type}
+                    value={updatedEvent?.type}
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border rounded border-gray-300"
                   >
@@ -237,7 +243,7 @@ function EventDetails() {
                       </option>
                     ))}
                   </select>
-                  {!EVENT_TYPES.includes(updatedEvent.type) && (
+                  {!EVENT_TYPES.includes(updatedEvent!.type) && (
                     <p className="text-red-500 text-sm">Please select a valid event type.</p>
                   )}
                 </div>
@@ -248,15 +254,15 @@ function EventDetails() {
                   <input
                     type="datetime-local"
                     name="date_time"
-                    value={updatedEvent.date_time?.slice(0, 16)} 
+                    value={updatedEvent?.date_time?.toString().slice(0, 16)} 
                     onChange={handleInputChange}
                     className={`w-full px-4 py-2 border rounded ${
-                      updatedEvent.date_time && new Date(updatedEvent.date_time) > new Date()
+                      updatedEvent?.date_time && new Date(updatedEvent.date_time) > new Date()
                         ? 'border-gray-300'
                         : 'border-red-500'
                     }`}
                   />
-                  {(!updatedEvent.date_time ||
+                  {(!updatedEvent?.date_time ||
                     new Date(updatedEvent.date_time) <= new Date()) && (
                     <p className="text-red-500 text-sm">Date must be in the future.</p>
                   )}
@@ -274,7 +280,7 @@ function EventDetails() {
                 <button
                   onClick={handleSaveChanges}
                   disabled={
-                    !updatedEvent.title?.trim() ||
+                    !updatedEvent?.title?.trim() ||
                     updatedEvent.title.trim().length < 3 ||
                     !updatedEvent.description?.trim() ||
                     updatedEvent.description.trim().length < 10 ||
@@ -285,7 +291,7 @@ function EventDetails() {
                     new Date(updatedEvent.date_time) <= new Date()
                   }
                   className={`px-4 py-2 text-white rounded ${
-                    !updatedEvent.title?.trim() ||
+                    !updatedEvent?.title?.trim() ||
                     updatedEvent.title.trim().length < 3 ||
                     !updatedEvent.description?.trim() ||
                     updatedEvent.description.trim().length < 10 ||

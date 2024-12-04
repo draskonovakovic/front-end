@@ -99,8 +99,8 @@ function EventOverview() {
         {
           id: newEvent.id.toString(),
           title: newEvent.title,
-          start: newEvent.date_time,
-          end: newEvent.date_time,
+          start: newEvent.date_time.toString(),
+          end: newEvent.date_time.toString(),
           extendedProps: {
             description: newEvent.description,
             location: newEvent.location,
