@@ -9,6 +9,7 @@ import { getAuthToken } from '@/utilis/authHelpers';
 import { EventData } from '@/types/event';
 import { UserData } from '@/types/user';
 import { EVENT_TYPES } from '@/constants/eventTypes';
+import withAuthGuard from '@/guard/authGuard';
 
 function EventDetails() {
   const { id } = useParams();
@@ -57,21 +58,24 @@ function EventDetails() {
     try {
       const eventData = await getEventById(+eventId);
       if (!eventData) {
-        throw new Error('Event not found');
+        throw new Error("Event not found");
       }
       setEvent(eventData);
-      setUpdatedEvent(eventData); 
-
-      if (eventData.creator_id) {
-        const userData = await getUserById(eventData.creator_id);
-        if (!userData) {
-          throw new Error('User not found');
-        }
-        setUser(userData);
+      setUpdatedEvent(eventData);
+  
+      if (!eventData.creator_id) {
+        setError("Undefined event creator ID.");
+        return;
       }
+  
+      const userData = await getUserById(eventData.creator_id);
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      setUser(userData);
     } catch (err: any) {
-      console.error('Error fetching event data:', err.message || err);
-      setError(err.message || 'Failed to load event data.');
+      console.error("Error fetching event data:", err.message || err);
+      setError(err.message || "Failed to load event data.");
     } finally {
       setLoading(false);
     }
@@ -327,4 +331,4 @@ function EventDetails() {
   );
 }
 
-export default EventDetails;
+export default withAuthGuard(EventDetails);
