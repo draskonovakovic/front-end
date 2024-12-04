@@ -57,14 +57,17 @@ function EventDetails() {
         throw new Error("Event not found");
       }
       setEvent(eventData);
-
-      if (eventData.creator_id) {
-        const userData = await getUserById(eventData.creator_id);
-        if (!userData) {
-          throw new Error("User not found");
-        }
-        setUser(userData);
+  
+      if (!eventData.creator_id) {
+        setError("Undefined event creator ID.");
+        return;
       }
+  
+      const userData = await getUserById(eventData.creator_id);
+      if (!userData) {
+        throw new Error("User not found");
+      }
+      setUser(userData);
     } catch (err: any) {
       console.error("Error fetching event data:", err.message || err);
       setError(err.message || "Failed to load event data.");
@@ -76,19 +79,26 @@ function EventDetails() {
   useEffect(() => {
     const token = getAuthToken();
     setIsAuthenticated(!!token);
-
-    if (id) {
-      fetchEventData(id);
-    } else {
-      setError("Invalid event ID.");
+  
+    if (!id) {
+      setError("Undefined event ID.");
       setLoading(false);
+      return; 
     }
-
+  
+    fetchEventData(id);
+  
+    const handleStorageChange = () => {
+      const updatedToken = getAuthToken();
+      setIsAuthenticated(!!updatedToken);
+    };
+  
     window.addEventListener('storage', handleStorageChange);
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [id]);
+  
 
   if (loading) {
     return <div>Loading...</div>;

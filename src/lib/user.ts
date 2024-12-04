@@ -6,7 +6,6 @@ export const getUserById = async (id: number) => {
       if (!response || !response.data) {
           throw new Error("Unexpected response: Response or data is undefined.");
       }
-      console.log(response.data);
       return response.data.data;
   } catch (error: any) {
       throw new Error(error.response?.data?.message || "An error occurred while getting user.");
