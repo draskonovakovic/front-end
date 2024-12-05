@@ -59,3 +59,25 @@ export const cancelEvent = async (id: number) => {
     throw new Error(error.response?.data?.message || "An error occurred while canceling event.");   
   }
 }
+
+export const getFilteredEvents = async (data: { date: string; active: string; type: string; search: string; }) => {
+  try {
+      const response = await api.get('/events/filter', {
+          params: {
+              date: data.date,
+              active: data.active,
+              type: data.type,
+              search: data.search
+          }
+      });
+      
+      if (!response || !response.data) {
+          throw new Error("Unexpected response: Response or data is undefined.");
+      }
+      
+      return response.data.data;
+  } catch (error: any) {
+      throw new Error(error.response?.data?.message || "An error occurred while filtering events.");
+  }
+};
+

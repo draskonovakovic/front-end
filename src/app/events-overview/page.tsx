@@ -8,7 +8,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import withAuthGuard from '@/guard/authGuard';
-import { createEvent, getAllEvents } from '@/lib/event';
+import { createEvent, getFilteredEvents } from '@/lib/event'; 
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
 import { EventData } from '@/types/event';
@@ -43,7 +43,7 @@ function EventOverview() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-
+  const [filters, setFilters] = useState({ date: '', active: '', type: '', search: '' });
   const eventTypes = EVENT_TYPES;
 
   const {
@@ -71,27 +71,25 @@ function EventOverview() {
   }, [router]);
 
   useEffect(() => {
-    connectSocket();
+    const token = getAuthToken();
+    setIsAuthenticated(!!token);
 
-    const fetchEvents = async () => {
-      try {
-        const data = await getAllEvents();
-        const formattedEvents = data.map((event: EventData) => ({
-          id: event.id,
-          title: event.title,
-          start: event.date_time,
-          extendedProps: {
-            description: event.description,
-            location: event.location,
-            type: event.type,
-          },
-        }));
-        setEvents(formattedEvents);
-      } catch (error) {
-        console.error('Error fetching events:', error);
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
+        setIsAuthenticated(false);
+        router.replace('/login');
       }
     };
-    fetchEvents();
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [router]);
+
+  useEffect(() => {
+    connectSocket();
 
     socket.on('newEvent', (newEvent: EventData) => {
       setEvents((prevEvents) => [
@@ -100,7 +98,6 @@ function EventOverview() {
           id: newEvent.id.toString(),
           title: newEvent.title,
           start: newEvent.date_time.toString(),
-          end: newEvent.date_time.toString(),
           extendedProps: {
             description: newEvent.description,
             location: newEvent.location,
@@ -114,7 +111,30 @@ function EventOverview() {
       socket.off('newEvent');
       disconnectSocket();
     };
-  }, []);
+  }, []); 
+
+  const fetchEvents = async () => {
+    try {
+      const data = await getFilteredEvents(filters); 
+      const formattedEvents = data.map((event: EventData) => ({
+        id: event.id,
+        title: event.title,
+        start: event.date_time,
+        extendedProps: {
+          description: event.description,
+          location: event.location,
+          type: event.type,
+        },
+      }));
+      setEvents(formattedEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents(); 
+  }, [filters]); 
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -125,43 +145,108 @@ function EventOverview() {
         location: data.location,
         type: data.type,
       });
-  
-      console.log("Kreirani event: ", response)
+
       if (!response.success) {
         throw new Error(`Error: ${response.status} - ${response.statusText}`);
       }
-  
+
       alert('Event created successfully!');
       setIsOpen(false);
     } catch (error: any) {
       const errorMessage = error?.message || 'An unknown error occurred';
       alert(`Failed to create event: ${errorMessage}`);
     }
-  };  
+  };
 
   const handleEventClick = (info: any) => {
     try {
       if (!info?.event) {
         throw new Error("Event information is missing.");
       }
-  
+
       const eventId = info.event.id;
-  
+
       if (!eventId) {
         throw new Error("Event ID is missing.");
       }
-  
+
       router.push(`/event-details/${eventId}`);
     } catch (error: any) {
       console.error("Error in handleEventClick:", error.message || error);
       alert(`Failed to navigate to event details: ${error.message || "Unknown error occurred."}`);
     }
   };
-  
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      [name]: value,
+    }));
+  };
+
+  const handleSearchClick = () => {
+    setFilters((prevFilters) => ({
+      ...prevFilters,
+      search: prevFilters.search, 
+    }));
+  };
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Event Calendar</h1>
+
+      {/* Filters */}
+      <div className="flex space-x-4 mb-4">
+        <input
+          type="date"
+          name="date"
+          value={filters.date}
+          onChange={handleFilterChange}
+          className="p-2 border rounded"
+          placeholder="Select date"
+        />
+        <select
+          name="active"
+          value={filters.active}
+          onChange={handleFilterChange}
+          className="p-2 border rounded"
+        >
+          <option value="">Status</option>
+          <option value="true">ACTIVE</option>
+          <option value="false">CANCELED</option>
+        </select>
+        <select
+          name="type"
+          value={filters.type}
+          onChange={handleFilterChange}
+          className="p-2 border rounded"
+        >
+          <option value="">Event Type</option>
+          {eventTypes.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
+        <div className="relative">
+          <input
+            type="text"
+            name="search"
+            value={filters.search}
+            onChange={handleFilterChange}
+            className="p-2 border rounded pr-10"
+            placeholder="Search events"
+          />
+          <button
+            type="button"
+            onClick={handleSearchClick}
+            className="absolute right-2 top-2 text-gray-500"
+          >
+            🔍
+          </button>
+        </div>
+      </div>
 
       {/* Calendar */}
       <FullCalendar
@@ -215,134 +300,85 @@ function EventOverview() {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
+                  <Dialog.Title
+                    as="h3"
+                    className="text-lg font-medium leading-6 text-gray-900"
+                  >
                     Create Event
                   </Dialog.Title>
-                  <form onSubmit={handleSubmit(onSubmit)}>
-                    {/* Title */}
+                  <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
                     <div className="mb-4">
-                      <label htmlFor="title" className="block text-sm font-medium mb-1">
-                        Title
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Title</label>
                       <input
-                        {...register('title', {
-                          required: 'Title is required',
-                          minLength: { value: 3, message: 'Title must be at least 3 characters' },
-                        })}
                         type="text"
-                        id="title"
-                        className={`w-full px-3 py-2 border rounded ${
-                          errors.title ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-2 border rounded"
+                        placeholder="Event Title"
+                        {...register('title', { required: 'Title is required' })}
                       />
-                      {errors.title && (
-                        <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
-                      )}
+                      {errors.title && <span className="text-red-500 text-xs">{errors.title.message}</span>}
                     </div>
 
-                    {/* Description */}
                     <div className="mb-4">
-                      <label htmlFor="description" className="block text-sm font-medium mb-1">
-                        Description
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Description</label>
                       <textarea
-                        {...register('description', {
-                          required: 'Description is required',
-                          minLength: { value: 10, message: 'Description must be at least 10 characters' },
-                        })}
-                        id="description"
-                        className={`w-full px-3 py-2 border rounded ${
-                          errors.description ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                      ></textarea>
-                      {errors.description && (
-                        <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
-                      )}
+                        className="w-full px-4 py-2 border rounded"
+                        placeholder="Event Description"
+                        {...register('description', { required: 'Description is required' })}
+                      />
+                      {errors.description && <span className="text-red-500 text-xs">{errors.description.message}</span>}
                     </div>
 
-                    {/* DateTime */}
                     <div className="mb-4">
-                      <label htmlFor="dateTime" className="block text-sm font-medium mb-1">
-                        Date and Time
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Date & Time</label>
                       <input
-                        {...register('dateTime', {
-                          required: 'Date and Time are required',
-                          validate: {
-                            isValidDate: (value) => {
-                              const date = new Date(value);
-                              return date > new Date() || 'Date and Time must be in the future';
-                            },
-                          },
-                        })}
                         type="datetime-local"
-                        id="dateTime"
-                        className={`w-full px-3 py-2 border rounded ${
-                          errors.dateTime ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-2 border rounded"
+                        {...register('dateTime', { required: 'Date and Time are required' })}
                       />
-                      {errors.dateTime && (
-                        <p className="text-red-500 text-sm mt-1">{errors.dateTime.message}</p>
-                      )}
+                      {errors.dateTime && <span className="text-red-500 text-xs">{errors.dateTime.message}</span>}
                     </div>
 
-                    {/* Location */}
                     <div className="mb-4">
-                      <label htmlFor="location" className="block text-sm font-medium mb-1">
-                        Location
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Location</label>
                       <input
-                        {...register('location', {
-                          required: 'Location is required',
-                          minLength: { value: 3, message: 'Location must be at least 3 characters' },
-                        })}
                         type="text"
-                        id="location"
-                        className={`w-full px-3 py-2 border rounded ${
-                          errors.location ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-2 border rounded"
+                        placeholder="Location"
+                        {...register('location', { required: 'Location is required' })}
                       />
-                      {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
-                      )}
+                      {errors.location && <span className="text-red-500 text-xs">{errors.location.message}</span>}
                     </div>
 
-                    {/* Type */}
                     <div className="mb-4">
-                      <label htmlFor="type" className="block text-sm font-medium mb-1">
-                        Type
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700">Event Type</label>
                       <select
-                        {...register('type', {
-                          required: 'Type is required',
-                          validate: {
-                            isValidType: (value) =>
-                              eventTypes.includes(value) || `Type must be one of: ${eventTypes.join(', ')}`,
-                          },
-                        })}
-                        id="type"
-                        className={`w-full px-3 py-2 border rounded ${
-                          errors.type ? 'border-red-500' : 'border-gray-300'
-                        }`}
+                        className="w-full px-4 py-2 border rounded"
+                        {...register('type', { required: 'Event type is required' })}
                       >
-                        <option value="">Select Type</option>
                         {eventTypes.map((type) => (
                           <option key={type} value={type}>
                             {type}
                           </option>
                         ))}
                       </select>
-                      {errors.type && (
-                        <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
-                      )}
+                      {errors.type && <span className="text-red-500 text-xs">{errors.type.message}</span>}
                     </div>
 
-                    <button
-                      type="submit"
-                      className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition"
-                    >
-                      Save
-                    </button>
+                    <div className="flex justify-between">
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded"
+                        onClick={() => setIsOpen(false)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-green-700 text-white rounded"
+                      >
+                        Create
+                      </button>
+                    </div>
                   </form>
                 </Dialog.Panel>
               </Transition.Child>
