@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getEventById, updateEvent } from '@/lib/event'; 
+import { getEventById, updateEvent, cancelEvent } from '@/lib/event'; 
 import { getUserById } from '@/lib/user';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
@@ -21,6 +21,7 @@ function EventDetails() {
   const [error, setError] = useState<string | ''>('');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [updatedEvent, setUpdatedEvent] = useState<EventData>();
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   const formatDate = (dateString: string | null | undefined) => {
     try {
@@ -74,7 +75,6 @@ function EventDetails() {
       }
       setUser(userData);
     } catch (err: any) {
-      console.error("Error fetching event data:", err.message || err);
       setError(err.message || "Failed to load event data.");
     } finally {
       setLoading(false);
@@ -111,7 +111,6 @@ function EventDetails() {
 
       handleSuccess(updatedEvent);
     } catch (error: any) {
-      console.error('Error updating event:', error.message || error);
       alert(`Failed to update event: ${error.message || 'Unknown error'}`);
     }
   };
@@ -145,6 +144,44 @@ function EventDetails() {
     };
   }, [id]);
 
+  const handleCancelClick = () => {
+    setIsCancelModalOpen(true); 
+  };
+
+  const handleConfirmCancel = async () => {
+    try {
+      if (!event) {
+        alert("Event is not defined.");
+        return;
+      }
+  
+      if (!event.id) {
+        alert("Event ID is missing.");
+        return;
+      }
+  
+      const response = await cancelEvent(event.id);
+      if (!response) {
+        throw new Error("Cancelation API returned no response.");
+      }
+  
+      handleCancelSuccess();
+    } catch (error: any) {
+      alert(`Failed to cancel the event: ${error.message || 'Unknown error'}`);
+      setIsCancelModalOpen(false); 
+    }
+  };  
+
+  const handleCancelSuccess = () => {
+    alert("Event successfully canceled!");
+    setIsCancelModalOpen(false);
+    router.push(`/events-overview`);
+  }
+
+  const handleCloseModal = () => {
+    setIsCancelModalOpen(false); 
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -169,6 +206,7 @@ function EventDetails() {
           <p className="text-lg font-medium text-gray-800">Location: <span className="text-gray-600">{event.location}</span></p>
           <p className="text-lg font-medium text-gray-800">Type: <span className="text-gray-600">{event.type}</span></p>
           <p className="text-lg font-medium text-gray-800">Date: <span className="text-gray-600">{formatDate(event.date_time.toString())}</span></p>
+          <p className="text-lg font-medium text-gray-800">Type: <span className="text-gray-600">{event.active ? 'Active' : 'Canceled'}</span></p>
         </div>
 
         {/* Divider */}
@@ -176,17 +214,27 @@ function EventDetails() {
 
         {/* User Information */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-800">Created By</h2>
+          <h2 className="text-xl font-semibold text-gray-800">Created By:</h2>
           <p className="text-lg text-gray-600">Name: {user.name} {user.surname}</p>
           <p className="text-lg text-gray-600">Email: {user.email}</p>
         </div>
 
-        <button
-          onClick={handleUpdateClick}
-          className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-400"
-        >
-          Update Event
-        </button>
+        <div className="mt-4 flex space-x-4">
+          <button
+            onClick={handleUpdateClick}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-400"
+          >
+            Update Event
+          </button>
+
+          <button
+            onClick={handleCancelClick}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-400"
+          >
+            Cancel Event
+          </button>
+        </div>
+
 
         {isUpdateModalOpen && (
             <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
@@ -328,6 +376,28 @@ function EventDetails() {
               </div>
             </div>
           </div>                
+        )}
+
+        {isCancelModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white p-6 rounded shadow-lg text-center">
+              <p className="mb-4">Are you sure you want to cancel this event?</p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={handleConfirmCancel}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-400"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={handleCloseModal}
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-200"
+                >
+                  No
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
