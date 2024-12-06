@@ -8,6 +8,6 @@ export const getUserById = async (id: number) => {
       }
       return response.data.data;
   } catch (error: any) {
-      throw new Error(error.response?.data?.message || "An error occurred while getting user.");
+      throw new Error(error.message || "An error occurred while getting user.");
   }
 };

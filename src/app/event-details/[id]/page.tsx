@@ -10,6 +10,7 @@ import { EventData } from '@/types/event';
 import { UserData } from '@/types/user';
 import { EVENT_TYPES } from '@/constants/eventTypes';
 import withAuthGuard from '@/guard/authGuard';
+import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 
 function EventDetails() {
   const { id } = useParams();
@@ -54,6 +55,19 @@ function EventDetails() {
       router.replace('/login');
     }
   };
+
+  useEffect(() => {
+    connectSocket();
+  
+    socket.on('updatedEvent', (updatedEvent: EventData) => {
+      setEvent(updatedEvent)
+    });
+  
+    return () => {
+      socket.off('updated');
+      disconnectSocket();
+    };
+  }, []);
 
   const fetchEventData = async (eventId: string | string[]) => {
     try {
@@ -195,7 +209,7 @@ function EventDetails() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div className="bg-light-green min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl w-full">
         {/* Event Title and Description */}
         <h1 className="text-3xl font-bold text-gray-800 mb-4">{event.title}</h1>

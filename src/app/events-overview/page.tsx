@@ -7,7 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import timelinePlugin from '@fullcalendar/timeline';
+import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import withAuthGuard from '@/guard/authGuard';
 import { createEvent, getFilteredEvents } from '@/lib/event'; 
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -39,12 +39,32 @@ type CalendarEvent = {
   };
 };
 
+type Filters = {
+  date: string;
+  active: string;
+  type: string;
+  search: string;
+};
+
+const calendarEventTypes = [
+  { id: 'Meeting', title: 'Meeting' },
+  { id: 'Workshop', title: 'Workshop' },
+  { id: 'Conference', title: 'Conference' },
+  { id: 'Webinar', title: 'Webinar' },
+  { id: 'Social Event', title: 'Social Event' },
+];
+
 function EventOverview() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [filters, setFilters] = useState({ date: '', active: '', type: '', search: '' });
+  const [filters, setFilters] = useState<Filters>({
+    date: '',
+    active: '',
+    type: '',
+    search: '',
+  });
   const eventTypes = EVENT_TYPES;
 
   const {
@@ -91,47 +111,66 @@ function EventOverview() {
 
   useEffect(() => {
     connectSocket();
-
+  
     socket.on('newEvent', (newEvent: EventData) => {
+      const startTime = new Date(newEvent.date_time);
+      const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
+  
       setEvents((prevEvents) => [
         ...prevEvents,
         {
           id: newEvent.id.toString(),
           title: newEvent.title,
-          start: newEvent.date_time.toString(),
+          start: startTime.toISOString(),
+          end: endTime.toISOString(), 
+          resourceId: newEvent.type,
           extendedProps: {
             description: newEvent.description,
             location: newEvent.location,
             type: newEvent.type,
+            active: newEvent.active
           },
         },
       ]);
     });
-
+  
     return () => {
       socket.off('newEvent');
       disconnectSocket();
     };
-  }, []); 
+  }, []);
 
   const fetchEvents = async () => {
     try {
-      const data = await getFilteredEvents(filters); 
-      const formattedEvents = data.map((event: EventData) => ({
-        id: event.id,
-        title: event.title,
-        start: event.date_time,
-        extendedProps: {
-          description: event.description,
-          location: event.location,
-          type: event.type,
-        },
-      }));
+      const data = await getFilteredEvents(filters);
+      const formattedEvents = data
+        .filter((event: EventData) => {
+          return event.id && event.title && event.date_time && event.description && event.location && event.type;
+        })
+        .map((event: EventData) => {
+          const startTime = new Date(event.date_time);
+          const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
+  
+          return {
+            id: event.id.toString(),
+            title: event.title,
+            start: startTime.toISOString(),
+            end: endTime.toISOString(), 
+            resourceId: event.type,
+            extendedProps: {
+              description: event.description,
+              location: event.location,
+              type: event.type,
+              active: event.active
+            },
+          };
+        });
       setEvents(formattedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
   };
+  
 
   useEffect(() => {
     fetchEvents(); 
@@ -194,24 +233,26 @@ function EventOverview() {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Event Calendar</h1>
+  <div className="p-6 bg-light-green dark:bg-gray-900 min-h-screen">
+    <h1 className="text-3xl font-bold mb-6 text-center text-gray-800 dark:text-gray-100">
+      Event Calendar
+    </h1>
 
-      {/* Filters */}
-      <div className="flex space-x-4 mb-4">
+    {/* Filters */}
+    <div className="bg-white dark:bg-gray-800 p-4 rounded shadow-md mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <input
           type="date"
           name="date"
           value={filters.date}
           onChange={handleFilterChange}
-          className="p-2 border rounded"
-          placeholder="Select date"
+          className="p-3 border rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
         />
         <select
           name="active"
           value={filters.active}
           onChange={handleFilterChange}
-          className="p-2 border rounded"
+          className="p-3 border rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
         >
           <option value="">Status</option>
           <option value="true">ACTIVE</option>
@@ -221,7 +262,7 @@ function EventOverview() {
           name="type"
           value={filters.type}
           onChange={handleFilterChange}
-          className="p-2 border rounded"
+          className="p-3 border rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
         >
           <option value="">Event Type</option>
           {eventTypes.map((type) => (
@@ -236,61 +277,59 @@ function EventOverview() {
             name="search"
             value={filters.search}
             onChange={handleFilterChange}
-            className="p-2 border rounded pr-10"
+            className="p-3 border rounded pr-10 focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             placeholder="Search events"
           />
           <button
             type="button"
             onClick={handleSearchClick}
-            className="absolute right-2 top-2 text-gray-500"
+            className="absolute right-3 top-3 text-gray-500 dark:text-gray-300"
           >
             🔍
           </button>
         </div>
       </div>
+    </div>
 
-      {/* Calendar */}
-      <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, timelinePlugin]}
-        initialView="dayGridMonth"
-        schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
-        events={events}
-        eventClick={handleEventClick}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,timelineDay',
-        }}
-        editable={true}
-        selectable={true}
-        height="auto"
-        slotDuration="01:00:00" // Podešavanje trajanja slotova (sat po sat)
-        slotLabelFormat={{
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        }} // Format vremena u timeline-u
-        eventContent={(arg) => (
-          <div style={{ padding: '5px', textAlign: 'center' }}>
-            <strong>{arg.timeText}</strong>
-            <br />
-            {arg.event.title}
-          </div>
-        )} // Prilagođeni prikaz događaja
-        nowIndicator={true} // Dodajte liniju za trenutno vreme
-      />
+    {/* Calendar */}
+    <FullCalendar
+      plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, resourceTimelinePlugin]}
+      initialView="dayGridMonth"
+      schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
+      resourceAreaHeaderContent="Event Types"
+      resources={calendarEventTypes}
+      events={events}
+      eventClick={handleEventClick}
+      headerToolbar={{
+        left: 'prev,next resourceTimelineDay',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek,timeGridDay',
+      }}
+      buttonText={{
+        resourceTimelineDay: 'Timeline View',
+      }}
+      editable={true}
+      selectable={true}
+      height="auto"
+      nowIndicator={true}
+      eventClassNames={(event) => {
+        // Provera da li je događaj otkazan
+        return event.event.extendedProps.active === false
+          ? 'bg-red-300' // Svetlocrvena boja za otkazane događaje
+          : 'bg-green-300'; // Svetlozelena boja za aktivne događaje
+      }}
+    />
 
+    {/* Floating Button */}
+    <button
+      onClick={() => setIsOpen(true)}
+      className="fixed bottom-8 right-8 bg-green-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none z-50"
+    >
+      <span className="text-3xl font-bold">+</span>
+    </button>
 
-      {/* Floating Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-8 right-8 bg-green-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none z-50"
-      >
-        <span className="text-2xl font-bold">+</span>
-      </button>
-
-      {/* Modal */}
-      <Transition appear show={isOpen} as={Fragment}>
+    {/* Modal */}
+    <Transition appear show={isOpen} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={() => setIsOpen(false)}>
           <Transition.Child
             as={Fragment}
@@ -316,85 +355,134 @@ function EventOverview() {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
-                  >
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900 mb-4">
                     Create Event
                   </Dialog.Title>
-                  <form onSubmit={handleSubmit(onSubmit)} className="mt-2">
+                  <form onSubmit={handleSubmit(onSubmit)}>
+                    {/* Title */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Title</label>
+                      <label htmlFor="title" className="block text-sm font-medium mb-1">
+                        Title
+                      </label>
                       <input
+                        {...register('title', {
+                          required: 'Title is required',
+                          minLength: { value: 3, message: 'Title must be at least 3 characters' },
+                        })}
                         type="text"
-                        className="w-full px-4 py-2 border rounded"
-                        placeholder="Event Title"
-                        {...register('title', { required: 'Title is required' })}
+                        id="title"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.title ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       />
-                      {errors.title && <span className="text-red-500 text-xs">{errors.title.message}</span>}
+                      {errors.title && (
+                        <p className="text-red-500 text-sm mt-1">{errors.title.message}</p>
+                      )}
                     </div>
 
+                    {/* Description */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Description</label>
+                      <label htmlFor="description" className="block text-sm font-medium mb-1">
+                        Description
+                      </label>
                       <textarea
-                        className="w-full px-4 py-2 border rounded"
-                        placeholder="Event Description"
-                        {...register('description', { required: 'Description is required' })}
-                      />
-                      {errors.description && <span className="text-red-500 text-xs">{errors.description.message}</span>}
+                        {...register('description', {
+                          required: 'Description is required',
+                          minLength: { value: 10, message: 'Description must be at least 10 characters' },
+                        })}
+                        id="description"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.description ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      ></textarea>
+                      {errors.description && (
+                        <p className="text-red-500 text-sm mt-1">{errors.description.message}</p>
+                      )}
                     </div>
 
+                    {/* DateTime */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Date & Time</label>
+                      <label htmlFor="dateTime" className="block text-sm font-medium mb-1">
+                        Date and Time
+                      </label>
                       <input
+                        {...register('dateTime', {
+                          required: 'Date and Time are required',
+                          validate: {
+                            isValidDate: (value) => {
+                              const date = new Date(value);
+                              return date > new Date() || 'Date and Time must be in the future';
+                            },
+                          },
+                        })}
                         type="datetime-local"
-                        className="w-full px-4 py-2 border rounded"
-                        {...register('dateTime', { required: 'Date and Time are required' })}
+                        id="dateTime"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.dateTime ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       />
-                      {errors.dateTime && <span className="text-red-500 text-xs">{errors.dateTime.message}</span>}
+                      {errors.dateTime && (
+                        <p className="text-red-500 text-sm mt-1">{errors.dateTime.message}</p>
+                      )}
                     </div>
 
+                    {/* Location */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Location</label>
+                      <label htmlFor="location" className="block text-sm font-medium mb-1">
+                        Location
+                      </label>
                       <input
+                        {...register('location', {
+                          required: 'Location is required',
+                          minLength: { value: 3, message: 'Location must be at least 3 characters' },
+                        })}
                         type="text"
-                        className="w-full px-4 py-2 border rounded"
-                        placeholder="Location"
-                        {...register('location', { required: 'Location is required' })}
+                        id="location"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.location ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       />
-                      {errors.location && <span className="text-red-500 text-xs">{errors.location.message}</span>}
+                      {errors.location && (
+                        <p className="text-red-500 text-sm mt-1">{errors.location.message}</p>
+                      )}
                     </div>
 
+                    {/* Type */}
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700">Event Type</label>
+                      <label htmlFor="type" className="block text-sm font-medium mb-1">
+                        Type
+                      </label>
                       <select
-                        className="w-full px-4 py-2 border rounded"
-                        {...register('type', { required: 'Event type is required' })}
+                        {...register('type', {
+                          required: 'Type is required',
+                          validate: {
+                            isValidType: (value) =>
+                              eventTypes.includes(value) || `Type must be one of: ${eventTypes.join(', ')}`,
+                          },
+                        })}
+                        id="type"
+                        className={`w-full px-3 py-2 border rounded ${
+                          errors.type ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       >
+                        <option value="">Select Type</option>
                         {eventTypes.map((type) => (
                           <option key={type} value={type}>
                             {type}
                           </option>
                         ))}
                       </select>
-                      {errors.type && <span className="text-red-500 text-xs">{errors.type.message}</span>}
+                      {errors.type && (
+                        <p className="text-red-500 text-sm mt-1">{errors.type.message}</p>
+                      )}
                     </div>
 
-                    <div className="flex justify-between">
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-gray-300 text-gray-700 rounded"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        className="px-4 py-2 bg-green-700 text-white rounded"
-                      >
-                        Create
-                      </button>
-                    </div>
+                    <button
+                      type="submit"
+                      className="w-full bg-green-600 text-white px-4 py-2 rounded hover:bg-green-500 transition"
+                    >
+                      Save
+                    </button>
                   </form>
                 </Dialog.Panel>
               </Transition.Child>
@@ -402,8 +490,9 @@ function EventOverview() {
           </div>
         </Dialog>
       </Transition>
-    </div>
-  );
+  </div>
+);
+
 }
 
 export default withAuthGuard(EventOverview);

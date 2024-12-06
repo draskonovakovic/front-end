@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --light-green: #f0fdf4;
+  --light-green-hover: #e3f9e5;
+  --dark-green: #14532d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,73 +18,36 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .fc-event {
-  background-color: green !important; 
+  background-color: #4caf50 !important; 
   color: white !important; 
-  border: 1px solid darkgreen !important; 
-  border-radius: 4px !important; 
-  padding: 2px 4px !important; 
+  border: none !important; 
+  border-radius: 8px !important; 
+  padding: 4px 6px !important; 
+  transition: all 0.3s ease-in-out;
 }
 
-.fc-daygrid-event {
-  display: block !important; 
-  border: 1px solid darkgreen !important; 
-  border-radius: 4px !important; 
-  padding: 2px 4px !important; 
+.fc-event:hover {
+  background-color: #388e3c !important;
 }
 
-.fc-daygrid-event-dot {
-  display: none !important; 
-}
-
-/* Glavni kontejner kalendara */
-.fc {
-  font-family: Arial, sans-serif;
-  font-size: 14px;
-}
-
-/* Prilagodite zaglavlje */
-.fc .fc-toolbar {
-  background-color: #f4f4f4;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-}
-
-/* Boje za događaje */
-.fc-event {
-  background-color: green !important; /* Plava boja */
-  border: 1px solid green !important; /* Tamnija plava */
-  color: white;
-  border-radius: 5px;
-  text-align: center;
-  padding: 2px;
-  font-size: 12px;
-}
-
-/* Aktivni slot u Timeline View-u */
-.fc-timeline-slot {
-  background-color: #f9fafb;
-}
-
-/* Prilagodite trenutni indikator vremena */
-.fc-now-indicator {
-  background-color: red;
-  height: 2px;
-}
-
-/* Naslov u Timeline View-u */
-.fc-timeline-lane-frame {
+.fc-toolbar-title {
+  font-size: 1.5rem !important;
   font-weight: bold;
-  color: #374151;
+  color: #333 !important;
 }
 
-/* Prilagodite resursnu kolonu */
-.fc-timeline-resource-cell {
-  background-color: #e5e7eb;
-  font-size: 13px;
-  padding: 5px;
-  text-align: left;
+.text-dark-green {
+  color: var(--dark-green);
+}
+
+.bg-light-green {
+  background: var(--light-green);
+}
+
+.bg-light-green-hover:hover {
+  background: var(--light-green-hover);
 }
