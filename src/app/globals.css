@@ -38,3 +38,52 @@ body {
 .fc-daygrid-event-dot {
   display: none !important; 
 }
+
+/* Glavni kontejner kalendara */
+.fc {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+/* Prilagodite zaglavlje */
+.fc .fc-toolbar {
+  background-color: #f4f4f4;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+/* Boje za događaje */
+.fc-event {
+  background-color: green !important; /* Plava boja */
+  border: 1px solid green !important; /* Tamnija plava */
+  color: white;
+  border-radius: 5px;
+  text-align: center;
+  padding: 2px;
+  font-size: 12px;
+}
+
+/* Aktivni slot u Timeline View-u */
+.fc-timeline-slot {
+  background-color: #f9fafb;
+}
+
+/* Prilagodite trenutni indikator vremena */
+.fc-now-indicator {
+  background-color: red;
+  height: 2px;
+}
+
+/* Naslov u Timeline View-u */
+.fc-timeline-lane-frame {
+  font-weight: bold;
+  color: #374151;
+}
+
+/* Prilagodite resursnu kolonu */
+.fc-timeline-resource-cell {
+  background-color: #e5e7eb;
+  font-size: 13px;
+  padding: 5px;
+  text-align: left;
+}

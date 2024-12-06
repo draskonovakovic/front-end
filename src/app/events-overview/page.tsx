@@ -7,6 +7,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import timelinePlugin from '@fullcalendar/timeline';
 import withAuthGuard from '@/guard/authGuard';
 import { createEvent, getFilteredEvents } from '@/lib/event'; 
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
@@ -250,20 +251,35 @@ function EventOverview() {
 
       {/* Calendar */}
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, timelinePlugin]}
         initialView="dayGridMonth"
+        schedulerLicenseKey="GPL-My-Project-Is-Open-Source"
         events={events}
-        eventColor="green"
         eventClick={handleEventClick}
         headerToolbar={{
           left: 'prev,next today',
           center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay,timelineDay',
         }}
         editable={true}
         selectable={true}
         height="auto"
+        slotDuration="01:00:00" // Podešavanje trajanja slotova (sat po sat)
+        slotLabelFormat={{
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        }} // Format vremena u timeline-u
+        eventContent={(arg) => (
+          <div style={{ padding: '5px', textAlign: 'center' }}>
+            <strong>{arg.timeText}</strong>
+            <br />
+            {arg.event.title}
+          </div>
+        )} // Prilagođeni prikaz događaja
+        nowIndicator={true} // Dodajte liniju za trenutno vreme
       />
+
 
       {/* Floating Button */}
       <button
