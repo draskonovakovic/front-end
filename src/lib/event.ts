@@ -8,7 +8,7 @@ export const createEvent = async (data: { title: string; description: string; da
         }
         return response.data;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message || "An error occurred while creating event.");
+        throw new Error(error.message || "An error occurred while creating event.");
     }
 };
 
@@ -20,7 +20,7 @@ export const getAllEvents = async () => {
         }
         return response.data.data;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message || "An error occurred while getting events.");
+        throw new Error(error.message || "An error occurred while getting events.");
     }
 };
 
@@ -32,7 +32,7 @@ export const getEventById = async (id: number) => {
         }
         return response.data.data;
     } catch (error: any) {
-        throw new Error(error.response?.data?.message || "An error occurred while getting event.");
+        throw new Error(error.message || "An error occurred while getting event.");
     }
 };
 
@@ -44,7 +44,7 @@ export const updateEvent = async (id: number, data: { title: string; description
     }
     return response.data;
   } catch (error: any) {
-    throw new Error(error.response?.data?.message || "An error occurred while updating event.");
+    throw new Error(error.message || "An error occurred while updating event.");
   }
 };
 
@@ -56,6 +56,28 @@ export const cancelEvent = async (id: number) => {
     }
     return response.data.data;
   } catch (error: any){
-    throw new Error(error.response?.data?.message || "An error occurred while canceling event.");   
+    throw new Error(error.message || "An error occurred while canceling event.");   
   }
 }
+
+export const getFilteredEvents = async (data: { date: string; active: string; type: string; search: string; }) => {
+  try {
+      const response = await api.get('/events/filter', {
+          params: {
+              date: data.date,
+              active: data.active,
+              type: data.type,
+              search: data.search
+          }
+      });
+      
+      if (!response || !response.data) {
+          throw new Error("Unexpected response: Response or data is undefined.");
+      }
+      
+      return response.data.data;
+  } catch (error: any) {
+      throw new Error(error.message || "An error occurred while filtering events.");
+  }
+};
+

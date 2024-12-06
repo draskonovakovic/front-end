@@ -9,7 +9,7 @@ export const registerUser = async (data: { name: string; surname: string; email:
       }
       return response.data;
   } catch (error: any) {
-      throw new Error(error.response?.data?.message || "An error occurred while registering.");
+      throw new Error(error.message || "An error occurred while registering.");
   }
 };
 
@@ -24,7 +24,7 @@ export const loginUser = async (data: { email: string; password: string }) => {
       setAuthToken(token);
       return response.data;
   } catch (error: any) {
-      throw new Error(error.response?.data?.message || "An error occurred during login.");
+      throw new Error(error.message || "An error occurred during login.");
   }
 };
 
@@ -32,6 +32,6 @@ export const logoutUser = async () => {
   try {
       clearAuthToken();
   } catch (error: any) {
-      throw new Error(error.response?.data?.message || "An error occurred during logout.");
+      throw new Error(error.message || "An error occurred during logout.");
   }
 };
