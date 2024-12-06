@@ -38,12 +38,24 @@ type CalendarEvent = {
   };
 };
 
+type Filters = {
+  date: string;
+  active: string;
+  type: string;
+  search: string;
+};
+
 function EventOverview() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const [filters, setFilters] = useState({ date: '', active: '', type: '', search: '' });
+  const [filters, setFilters] = useState<Filters>({
+    date: '',
+    active: '',
+    type: '',
+    search: '',
+  });
   const eventTypes = EVENT_TYPES;
 
   const {
@@ -116,17 +128,21 @@ function EventOverview() {
   const fetchEvents = async () => {
     try {
       const data = await getFilteredEvents(filters); 
-      const formattedEvents = data.map((event: EventData) => ({
-        id: event.id,
-        title: event.title,
-        start: event.date_time,
-        extendedProps: {
-          description: event.description,
-          location: event.location,
-          type: event.type,
-        },
-      }));
-      setEvents(formattedEvents);
+      const formattedEvents = data
+        .filter((event: EventData) => {
+          return event.id && event.title && event.date_time && event.description && event.location && event.type;
+        })
+        .map((event: EventData) => ({
+          id: event.id.toString(),
+          title: event.title,
+          start: event.date_time.toString(),
+          extendedProps: {
+            description: event.description,
+            location: event.location,
+            type: event.type,
+          },
+        }));
+        setEvents(formattedEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
