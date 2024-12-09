@@ -1,6 +1,15 @@
+'use client';
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleRedirect = () => {
+    router.push('/login');
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Hero sekcija */}
@@ -65,7 +74,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-green-600 mb-6">Ready to Start Planning?</h2>
           <p className="text-lg mb-6 text-gray-700">Create your first event today and experience effortless event management!</p>
-          <button className="bg-green-600 text-white py-3 px-6 rounded-full hover:bg-green-700 transition">
+          <button className="bg-green-600 text-white py-3 px-6 rounded-full hover:bg-green-700 transition" onClick={handleRedirect}>
             Get Started
           </button>
         </div>
