@@ -1,11 +1,9 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { loginUser } from '@/lib/auth';
-import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 
 type FormData = {
   email: string;
@@ -13,7 +11,6 @@ type FormData = {
 };
 
 export default function LoginPage() {
-  const [serverError, setServerError] = useState<string | ''>('');
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     mode: 'onBlur',
   });
@@ -25,11 +22,18 @@ export default function LoginPage() {
       const response = await loginUser(data); 
       console.log('Login successful:', response);
 
-      login()
-
-      router.push('/events-overview'); 
+      login(); 
+      router.push('/events-overview');
     } catch (error: any) {
-      setServerError(error.message);
+      console.error(error); 
+
+      if (error.message.includes('401')) {
+        alert('Incorrect email or password.');
+      } else if (error.message.includes('404')) {
+        alert('User not found. Please check your email.');
+      } else {
+        alert('An unexpected error occurred. Please try again later.');
+      }
     }
   };
 
@@ -84,10 +88,6 @@ export default function LoginPage() {
             <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
           )}
         </div>
-
-        {serverError && (
-          <p className="text-red-500 text-sm mt-1">{serverError}</p>
-        )}
 
         <button
           type="submit"

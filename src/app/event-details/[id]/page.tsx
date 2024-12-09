@@ -211,53 +211,72 @@ function EventDetails() {
   return (
     <div className="bg-light-green min-h-screen flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl w-full">
-        {/* Event Title and Description */}
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">{event.title}</h1>
+      {/* Event Title and Description */}
+      <h1 className="text-3xl font-bold text-gray-800 mb-4 flex items-center">
+        <span className="mr-2">🎉</span>{event.title}
+      </h1>
 
-        {/* Event Details */}
-        <div className="space-y-4">
-          <p className="text-lg font-medium text-gray-800">Description: <span className="text-gray-600">{event.description}</span></p>
-          <p className="text-lg font-medium text-gray-800">Location: <span className="text-gray-600">{event.location}</span></p>
-          <p className="text-lg font-medium text-gray-800">Type: <span className="text-gray-600">{event.type}</span></p>
-          <p className="text-lg font-medium text-gray-800">Date: <span className="text-gray-600">{formatDate(event.date_time.toString())}</span></p>
-          <p className="text-lg font-medium text-gray-800">Type: <span className="text-gray-600">{event.active ? 'Active' : 'Canceled'}</span></p>
+      {/* Event Details */}
+      <div className="space-y-4">
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-800 mr-2">📜 Description:</span>
+          <span className="text-gray-600">{event.description}</span>
         </div>
-
-        {/* Divider */}
-        <div className="my-8 border-t border-gray-200"></div>
-
-        {/* User Information */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-800">Created By:</h2>
-          <p className="text-lg text-gray-600">Name: {user.name} {user.surname}</p>
-          <p className="text-lg text-gray-600">Email: {user.email}</p>
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-800 mr-2">📍 Location:</span>
+          <span className="text-gray-600">{event.location}</span>
         </div>
-
-        <div className="mt-4 flex space-x-4">
-          <button
-            onClick={handleUpdateClick}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-400"
-          >
-            Update Event
-          </button>
-
-          <button
-            onClick={handleCancelClick}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-400"
-          >
-            Cancel Event
-          </button>
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-800 mr-2">🔖 Type:</span>
+          <span className="text-gray-600">{event.type}</span>
         </div>
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-800 mr-2">📅 Date:</span>
+          <span className="text-gray-600">{formatDate(event.date_time.toString())}</span>
+        </div>
+        <div className="flex items-center">
+          <span className="text-lg font-medium text-gray-800 mr-2">⚡ Status:</span>
+          <span className={`text-gray-600 ${event.active ? 'text-green-600' : 'text-red-600'}`}>
+            {event.active ? 'Active' : 'Canceled'}
+          </span>
+        </div>
+      </div>
 
+      {/* Divider */}
+      <div className="my-8 border-t border-gray-200"></div>
 
-        {isUpdateModalOpen && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+      {/* User Information */}
+      <div>
+        <h2 className="text-xl font-semibold text-gray-800">Created By:</h2>
+        <p className="text-lg text-gray-600">👤 Name: {user.name} {user.surname}</p>
+        <p className="text-lg text-gray-600">📧 Email: {user.email}</p>
+      </div>
+
+      {/* Buttons */}
+      <div className="mt-4 flex space-x-4">
+        <button
+          onClick={handleUpdateClick}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-400 flex items-center"
+        >
+          <span className="mr-2">✏️</span> Update Event
+        </button>
+
+        <button
+          onClick={handleCancelClick}
+          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-400 flex items-center"
+        >
+          <span className="mr-2">❌</span> Cancel Event
+        </button>
+      </div>
+
+      {isUpdateModalOpen && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
             <div className="bg-white p-6 rounded shadow-md w-1/2">
               <h2 className="text-xl font-bold mb-4">Update Event</h2>
               <div className="space-y-4">
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Title</label>
+                  <label className="block text-sm font-medium mb-1">📝 Title</label>
                   <input
                     type="text"
                     name="title"
@@ -275,7 +294,7 @@ function EventDetails() {
           
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <label className="block text-sm font-medium mb-1">📝 Description</label>
                   <textarea
                     name="description"
                     value={updatedEvent?.description}
@@ -289,10 +308,10 @@ function EventDetails() {
                     <p className="text-red-500 text-sm">Description must be at least 10 characters long.</p>
                   )}
                 </div>
-          
+
                 {/* Location */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Location</label>
+                  <label className="block text-sm font-medium mb-1">📍 Location</label>
                   <input
                     type="text"
                     name="location"
@@ -307,10 +326,10 @@ function EventDetails() {
                     <p className="text-red-500 text-sm">Location must be at least 3 characters long.</p>
                   )}
                 </div>
-          
+
                 {/* Type */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Type</label>
+                  <label className="block text-sm font-medium mb-1">🔖 Type</label>
                   <select
                     name="type"
                     value={updatedEvent?.type}
@@ -331,7 +350,7 @@ function EventDetails() {
           
                 {/* Date and Time */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Date & Time</label>
+                  <label className="block text-sm font-medium mb-1">📅 Date & Time</label>
                   <input
                     type="datetime-local"
                     name="date_time"
@@ -389,7 +408,7 @@ function EventDetails() {
                 </button>
               </div>
             </div>
-          </div>                
+          </div>
         )}
 
         {isCancelModalOpen && (
