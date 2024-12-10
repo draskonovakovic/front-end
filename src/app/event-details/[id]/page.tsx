@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getEventById, updateEvent, cancelEvent, isUsersEvent } from '@/lib/event'; 
-import { getUserById } from '@/lib/user';
+import { getUserById, getAllUsers } from '@/lib/user';
+import { sendInvitation } from '@/lib/invitation';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
 import { EventData } from '@/types/event';
@@ -24,6 +25,9 @@ function EventDetails() {
   const [updatedEvent, setUpdatedEvent] = useState<EventData>();
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
+  const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
 
   const formatDate = (dateString: string | null | undefined) => {
     try {
@@ -90,6 +94,7 @@ function EventDetails() {
       }
       setUser(userData);
       setIsCreator(await isUsersEvent(+eventId));
+      setUsers(await getAllUsers())
     } catch (err: any) {
       setError(err.message || "Failed to load event data.");
     } finally {
@@ -197,6 +202,26 @@ function EventDetails() {
   const handleCloseModal = () => {
     setIsCancelModalOpen(false); 
   };
+  
+  const handleSendInvitations = async () => {
+    try {
+      if (!event) {
+        alert("Event is not defined.");
+        return;
+      }
+  
+      if (!event.id) {
+        alert("Event ID is missing.");
+        return;
+      }
+
+      await Promise.all(selectedUsers.map((userId) => sendInvitation({ user_id: userId, event_id: event?.id, status: 'pending' })));
+      alert('Invitations sent successfully!');
+      setIsInvitationModalOpen(false);
+    } catch (err) {
+      alert('Failed to send invitations.');
+    }
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -275,6 +300,16 @@ function EventDetails() {
           }`}
         >
           <span className="mr-2">❌</span> Cancel Event
+        </button>
+
+        <button
+          onClick={() => setIsInvitationModalOpen(true)}
+          disabled={!isCreator}
+          className={`px-4 py-2 rounded flex items-center ${
+            isCreator ? 'bg-blue-600 text-white hover:bg-blue-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+          }`}
+        >
+          <span className="mr-2">📩</span> Send Invitations
         </button>
       </div>
 
@@ -436,6 +471,48 @@ function EventDetails() {
                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-200"
                 >
                   No
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isInvitationModalOpen && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+            <div className="bg-white p-6 rounded shadow-md w-1/2">
+              <h2 className="text-xl font-bold mb-4">Send Invitations</h2>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {users.map((user) => (
+                  <div key={user.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`user-${user.id}`}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers((prev) => [...prev, user.id]);
+                        } else {
+                          setSelectedUsers((prev) => prev.filter((id) => id !== user.id));
+                        }
+                      }}
+                    />
+                    <label htmlFor={`user-${user.id}`} className="text-gray-700">
+                      {user.name} {user.surname}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => setIsInvitationModalOpen(false)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendInvitations}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-400"
+                >
+                  Send
                 </button>
               </div>
             </div>
