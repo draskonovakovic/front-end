@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getEventById, updateEvent, cancelEvent } from '@/lib/event'; 
+import { getEventById, updateEvent, cancelEvent, isUsersEvent } from '@/lib/event'; 
 import { getUserById } from '@/lib/user';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
@@ -23,6 +23,7 @@ function EventDetails() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [updatedEvent, setUpdatedEvent] = useState<EventData>();
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isCreator, setIsCreator] = useState(false);
 
   const formatDate = (dateString: string | null | undefined) => {
     try {
@@ -88,6 +89,7 @@ function EventDetails() {
         throw new Error("User not found");
       }
       setUser(userData);
+      setIsCreator(await isUsersEvent(+eventId));
     } catch (err: any) {
       setError(err.message || "Failed to load event data.");
     } finally {
@@ -253,17 +255,24 @@ function EventDetails() {
       </div>
 
       {/* Buttons */}
+      {/* Buttons */}
       <div className="mt-4 flex space-x-4">
         <button
           onClick={handleUpdateClick}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-400 flex items-center"
+          disabled={!isCreator}
+          className={`px-4 py-2 rounded flex items-center ${
+            isCreator ? 'bg-green-600 text-white hover:bg-green-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+          }`}
         >
           <span className="mr-2">✏️</span> Update Event
         </button>
 
         <button
           onClick={handleCancelClick}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-400 flex items-center"
+          disabled={!isCreator}
+          className={`px-4 py-2 rounded flex items-center ${
+            isCreator ? 'bg-red-600 text-white hover:bg-red-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+          }`}
         >
           <span className="mr-2">❌</span> Cancel Event
         </button>

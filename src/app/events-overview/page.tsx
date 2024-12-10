@@ -9,7 +9,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import withAuthGuard from '@/guard/authGuard';
-import { createEvent, getFilteredEvents } from '@/lib/event'; 
+import { createEvent, getFilteredEvents, isUsersEvent } from '@/lib/event'; 
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
 import { EventData } from '@/types/event';
@@ -129,7 +129,8 @@ function EventOverview() {
             description: newEvent.description,
             location: newEvent.location,
             type: newEvent.type,
-            active: newEvent.active
+            active: newEvent.active,
+            isUsersEvent: true
           },
         },
       ]);
@@ -144,34 +145,47 @@ function EventOverview() {
   const fetchEvents = async () => {
     try {
       const data = await getFilteredEvents(filters);
-      const formattedEvents = data
-        .filter((event: EventData) => {
-          return event.id && event.title && event.date_time && event.description && event.location && event.type;
-        })
-        .map((event: EventData) => {
-          const startTime = new Date(event.date_time);
-          const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
   
-          return {
-            id: event.id.toString(),
-            title: event.title,
-            start: startTime.toISOString(),
-            end: endTime.toISOString(), 
-            resourceId: event.type,
-            extendedProps: {
-              description: event.description,
-              location: event.location,
-              type: event.type,
-              active: event.active
-            },
-          };
-        });
+      const formattedEvents = await Promise.all(
+        data
+          .filter((event: EventData) => {
+            return (
+              event.id &&
+              event.title &&
+              event.date_time &&
+              event.description &&
+              event.location &&
+              event.type
+            );
+          })
+          .map(async (event: EventData) => {
+            const startTime = new Date(event.date_time);
+            const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
+  
+            const isUserEvent = await isUsersEvent(event.id); 
+  
+            return {
+              id: event.id.toString(),
+              title: event.title,
+              start: startTime.toISOString(),
+              end: endTime.toISOString(),
+              resourceId: event.type,
+              extendedProps: {
+                description: event.description,
+                location: event.location,
+                type: event.type,
+                active: event.active,
+                isUsersEvent: isUserEvent, 
+              },
+            };
+          })
+      );
+  
       setEvents(formattedEvents);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error("Error fetching events:", error);
     }
   };
-  
 
   useEffect(() => {
     fetchEvents(); 
@@ -251,7 +265,7 @@ function EventOverview() {
           return false;
         }
   
-        return eventDate > new Date() && event.extendedProps?.active !== false; // Samo aktivni događaji
+        return eventDate > new Date() && event.extendedProps?.active !== false; 
       });
   
       if (upcomingEvents.length === 0) {
@@ -391,7 +405,7 @@ function EventOverview() {
           Events with a <span className="line-through decoration-red-500 decoration-2">red strikethrough</span> are canceled.
         </li>
         <li>
-          Click on an event to see detailed information about it.
+          Click on an event to see detailed information about it. Events you have organized are displayed with <span className="text-yellow-300">★</span>.
         </li>
       </ul>
       <FullCalendar
@@ -416,6 +430,8 @@ function EventOverview() {
         nowIndicator={true}
         eventContent={(eventInfo) => {
           const isCanceled = eventInfo.event.extendedProps.active === false;
+          const isUsersEvent = eventInfo.event.extendedProps.isUsersEvent;
+        
           return (
             <div
               title={`Title: ${eventInfo.event.title}\n${
@@ -423,15 +439,22 @@ function EventOverview() {
               }Location: ${eventInfo.event.extendedProps.location || "Not specified"}`}
             >
               <div className="flex items-center">
+                {isUsersEvent && (
+                  <span className="text-yellow-300 mr-1">★</span> 
+                )}
                 <span
-                  className={`${isCanceled ? "text-white line-through decoration-red-500 decoration-3" : ""}`}
+                  className={`${
+                    isCanceled
+                      ? "text-white line-through decoration-red-500 decoration-3"
+                      : ""
+                  }`}
                 >
                   {eventInfo.timeText} {eventInfo.event.title}
                 </span>
               </div>
             </div>
           );
-        }}
+        }}        
       />
     </div>
 
