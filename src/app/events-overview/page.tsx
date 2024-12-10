@@ -13,7 +13,7 @@ import { createEvent, getFilteredEvents } from '@/lib/event';
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
 import { EventData } from '@/types/event';
-import { EVENT_TYPES } from '@/constants/eventTypes';
+import { EVENT_TYPES, calendarEventTypes } from '@/constants/eventTypes';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
 
@@ -46,14 +46,6 @@ type Filters = {
   type: string;
   search: string;
 };
-
-const calendarEventTypes = [
-  { id: 'Meeting', title: 'Meeting' },
-  { id: 'Workshop', title: 'Workshop' },
-  { id: 'Conference', title: 'Conference' },
-  { id: 'Webinar', title: 'Webinar' },
-  { id: 'Social Event', title: 'Social Event' },
-];
 
 function EventOverview() {
   const router = useRouter();
@@ -242,16 +234,16 @@ function EventOverview() {
       const upcomingEvents = events.filter((event) => {
         if (!event.start) {
           console.warn("Event is missing a 'start' property:", event);
-          return false;
+          return null;
         }
   
         const eventDate = new Date(event.start);
         if (isNaN(eventDate.getTime())) {
           console.warn("Invalid event date format:", event.start);
-          return false;
+          return null;
         }
   
-        return eventDate > new Date() && event.extendedProps?.active !== false; // Samo aktivni događaji
+        return eventDate > new Date() && event.extendedProps?.active !== false; 
       });
   
       if (upcomingEvents.length === 0) {

@@ -64,7 +64,7 @@ function EventDetails() {
     });
   
     return () => {
-      socket.off('updated');
+      socket.off('updatedEvent');
       disconnectSocket();
     };
   }, []);
