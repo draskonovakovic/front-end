@@ -438,7 +438,7 @@ function EventOverview() {
     {/* Floating Button */}
     <button
       onClick={() => setIsOpen(true)}
-      className="fixed bottom-8 right-8 bg-green-700 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none z-50"
+      className="fixed bottom-8 right-8 bg-green-600 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-green-500 transition focus:outline-none z-50"
     >
       <span className="text-3xl font-bold">+</span>
     </button>

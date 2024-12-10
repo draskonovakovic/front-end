@@ -82,7 +82,7 @@ function EventDetails() {
         setError("Undefined event creator ID.");
         return;
       }
-  
+
       const userData = await getUserById(eventData.creator_id);
       if (!userData) {
         throw new Error("User not found");
