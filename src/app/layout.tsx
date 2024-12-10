@@ -1,8 +1,12 @@
-import type { Metadata } from "next";
+// root-layout.tsx
+'use client';
+
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import NotificationBell from './notification-bell/page';
+import Navbar from "./navbar/page";
+import { ReactNode } from "react";
 import localFont from "next/font/local";
 import "./globals.css";
-import Navbar from "./navbar/page";
-import { AuthProvider } from "@/context/AuthContext"; 
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -15,23 +19,25 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "Event Planning App",
-  description: "Planiranje događaja sa stilom!",
-};
+function NotificationBellWrapper() {
+  const { isAuthenticated } = useAuth(); 
+
+  if (!isAuthenticated) {
+    return null; 
+  }
+
+  return <NotificationBell />;
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AuthProvider> 
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <AuthProvider>
           <Navbar />
+          <NotificationBellWrapper /> 
           {children}
         </AuthProvider>
       </body>

@@ -1,11 +1,9 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { loginUser } from '@/lib/auth';
-import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 
 type FormData = {
   email: string;
@@ -13,7 +11,6 @@ type FormData = {
 };
 
 export default function LoginPage() {
-  const [serverError, setServerError] = useState<string | ''>('');
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     mode: 'onBlur',
   });
@@ -22,14 +19,25 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await loginUser(data); 
+      const response = await loginUser(data);
       console.log('Login successful:', response);
-
-      login()
-
-      router.push('/events-overview'); 
-    } catch (error: any) {
-      setServerError(error.message);
+  
+      login();
+      router.push('/events-overview');
+    } catch (error: unknown) {
+      console.error(error);
+  
+      let errorMessage = 'An unexpected error occurred. Please try again later.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = 'Incorrect email or password.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'User not found. Please check your email.';
+        }
+      }
+  
+      alert(errorMessage);
     }
   };
 
@@ -85,16 +93,24 @@ export default function LoginPage() {
           )}
         </div>
 
-        {serverError && (
-          <p className="text-red-500 text-sm mt-1">{serverError}</p>
-        )}
-
         <button
           type="submit"
           className="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition"
         >
           Login
         </button>
+
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a
+              href="/register"
+              className="text-green-600 hover:underline"
+            >
+              Register here
+            </a>
+          </p>
+        </div>
       </form>
     </div>
   );
