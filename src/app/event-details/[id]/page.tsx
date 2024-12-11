@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getEventById, updateEvent, cancelEvent, isUsersEvent } from '@/lib/event'; 
 import { getUserById, getAllUsers } from '@/lib/user';
 import { sendInvitation } from '@/lib/invitation';
@@ -28,6 +28,23 @@ function EventDetails() {
   const [isInvitationModalOpen, setIsInvitationModalOpen] = useState(false);
   const [users, setUsers] = useState<UserData[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams(); 
+  const [modalVisible, setModalVisible] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('invitationAccepted') === 'true') {
+      setModalVisible(true);
+    }
+  }, [searchParams]);
+  
+  const closeModal = () => setModalVisible(false);
+
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.surname.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const formatDate = (dateString: string | null | undefined) => {
     try {
@@ -296,7 +313,7 @@ function EventDetails() {
           onClick={handleCancelClick}
           disabled={!isCreator}
           className={`px-4 py-2 rounded flex items-center ${
-            isCreator ? 'bg-red-600 text-white hover:bg-red-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            (isCreator && event.active) ? 'bg-red-600 text-white hover:bg-red-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
           }`}
         >
           <span className="mr-2">❌</span> Cancel Event
@@ -304,9 +321,9 @@ function EventDetails() {
 
         <button
           onClick={() => setIsInvitationModalOpen(true)}
-          disabled={!isCreator}
+          disabled={!isCreator || !event.active}
           className={`px-4 py-2 rounded flex items-center ${
-            isCreator ? 'bg-blue-600 text-white hover:bg-blue-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            (isCreator && event.active) ? 'bg-blue-600 text-white hover:bg-blue-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
           }`}
         >
           <span className="mr-2">📩</span> Send Invitations
@@ -478,46 +495,80 @@ function EventDetails() {
         )}
 
         {isInvitationModalOpen && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-            <div className="bg-white p-6 rounded shadow-md w-1/2">
-              <h2 className="text-xl font-bold mb-4">Send Invitations</h2>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {users.map((user) => (
-                  <div key={user.id} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id={`user-${user.id}`}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedUsers((prev) => [...prev, user.id]);
-                        } else {
-                          setSelectedUsers((prev) => prev.filter((id) => id !== user.id));
-                        }
-                      }}
-                    />
-                    <label htmlFor={`user-${user.id}`} className="text-gray-700">
-                      {user.name} {user.surname}
-                    </label>
-                  </div>
-                ))}
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+              <div className="bg-white p-6 rounded shadow-md w-full max-w-lg">
+                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Send Invitations</h2>
+
+                {/* Search input */}
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+                  />
+                </div>
+
+                {/* User list */}
+                <div className="space-y-2 max-h-64 overflow-y-auto border rounded p-2">
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((user) => (
+                      <div key={user.id} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`user-${user.id}`}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedUsers((prev) => [...prev, user.id]);
+                            } else {
+                              setSelectedUsers((prev) => prev.filter((id) => id !== user.id));
+                            }
+                          }}
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                        />
+                        <label htmlFor={`user-${user.id}`} className="text-gray-700">
+                          {user.name} {user.surname}
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No users found.</p>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="mt-4 flex justify-end space-x-2">
+                  <button
+                    onClick={() => setIsInvitationModalOpen(false)}
+                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-400 focus:outline-none focus:ring focus:ring-gray-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendInvitations}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button
-                  onClick={() => setIsInvitationModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-400"
+            </div>
+          )}
+
+          {modalVisible && (
+            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-8 rounded-lg shadow-md max-w-sm w-full text-center">
+                <p className="text-xl font-semibold">Invitation Successfully Accepted!</p>
+                <button 
+                  onClick={closeModal}
+                  className="mt-4 bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSendInvitations}
-                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-400"
-                >
-                  Send
+                  Close
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          )}
       </div>
     </div>
   );
