@@ -33,7 +33,10 @@ function EventDetails() {
   const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get('invitationAccepted') === 'true') {
+    const invitationAccepted = searchParams.get('invitationAccepted') === 'true';
+    const invitationDeclined = searchParams.get('invitationDeclined') === 'true';
+  
+    if (invitationAccepted || invitationDeclined) {
       setModalVisible(true);
     }
   }, [searchParams]);
@@ -559,9 +562,14 @@ function EventDetails() {
           {modalVisible && (
             <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white p-8 rounded-lg shadow-md max-w-sm w-full text-center">
-                <p className="text-xl font-semibold">Invitation Successfully Accepted!</p>
-                <button 
-                  onClick={closeModal}
+                {searchParams.get('invitationAccepted') === 'true' && (
+                  <p className="text-xl font-semibold">Invitation Successfully Accepted!</p>
+                )}
+                {searchParams.get('invitationDeclined') === 'true' && (
+                  <p className="text-xl font-semibold">Invitation Successfully Declined!</p>
+                )}
+                <button
+                  onClick={() => setModalVisible(false)}
                   className="mt-4 bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
                 >
                   Close

@@ -1,4 +1,3 @@
-// root-layout.tsx
 'use client';
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";
@@ -18,6 +17,7 @@ const geistMono = localFont({
   variable: "--font-geist-mono",
   weight: "100 900",
 });
+
 
 function NotificationBellWrapper() {
   const { isAuthenticated } = useAuth(); 

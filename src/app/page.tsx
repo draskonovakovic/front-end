@@ -3,17 +3,34 @@
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { clearAuthToken } from "@/utilis/authHelpers";
+import { getAuthToken } from "@/utilis/authHelpers";
 
 export default function Home() {
   const router = useRouter();
   const searchParams = useSearchParams(); 
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   useEffect(() => {
-    if (searchParams.get('invitationAccepted') === 'true') {
-      clearAuthToken()
-      setModalVisible(true);
+    const invitationAccepted = searchParams.get('invitationAccepted') === 'true';
+    const invitationDecline = searchParams.get('invitationDeclined') === 'true';
+    const eventId = searchParams.get('eventId');
+
+    if (invitationAccepted || invitationDecline) {
+      if (getAuthToken()) {
+        if (invitationAccepted) {
+          router.push(`/event-details/${eventId}?invitationAccepted=true`);
+        } else {
+          router.push(`/event-details/${eventId}?invitationDeclined=true`); 
+        }
+      } else {
+        setModalMessage(
+          invitationAccepted
+            ? "Invitation Successfully Accepted!"
+            : "Invitation Successfully Declined."
+        );
+        setModalVisible(true);
+      }
     }
   }, [searchParams]);
 
@@ -33,11 +50,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modal za potvrdu prihvatanja pozivnice */}
+      {/* Modal za potvrdu prihvatanja ili odbijanja pozivnice */}
       {modalVisible && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-md max-w-sm w-full text-center">
-            <p className="text-xl font-semibold">Invitation Successfully Accepted!</p>
+            <p className="text-xl font-semibold">{modalMessage}</p>
             <button 
               onClick={closeModal}
               className="mt-4 bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
