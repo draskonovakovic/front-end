@@ -91,5 +91,17 @@ export const getFilteredEvents = async (data: { date: string; active: string; ty
   } catch (error: any) {
       throw new Error(error.message || "An error occurred while filtering events.");
   }
+}
+
+export const getEventsWithStatistics = async () => {
+  try {
+    const response = await api.get("/events/dashboard/attendance");
+    if (!response || !response.data) {
+      throw new Error("Unexpected response: Response or data is undefined.");
+    }
+    return response.data.data;
+  } catch (error: any) {
+    throw new Error(error.message || "An error occurred while getting events with statistics.");
+  }
 };
 
