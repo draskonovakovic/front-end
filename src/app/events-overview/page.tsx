@@ -395,6 +395,9 @@ function EventOverview() {
           Events displayed in <span className="text-green-600">green</span> are active and scheduled.
         </li>
         <li>
+          Events displayed in <span className="text-gray-600">gray</span> are finished.
+        </li>
+        <li>
           Events with a <span className="line-through decoration-red-500 decoration-2">red strikethrough</span> are canceled.
         </li>
         <li>
@@ -408,6 +411,10 @@ function EventOverview() {
         resourceAreaHeaderContent="Event Types"
         resources={calendarEventTypes}
         events={events}
+        eventClassNames={(eventInfo) => {
+          const isPastEvent = eventInfo.event.end ? new Date(eventInfo.event.end) < new Date() : false;
+          return isPastEvent ? ['past-event'] : [];
+        }}
         eventClick={handleEventClick}
         headerToolbar={{
           left: 'prev,next resourceTimelineDay',
@@ -424,30 +431,29 @@ function EventOverview() {
         eventContent={(eventInfo) => {
           const isCanceled = eventInfo.event.extendedProps.active === false;
           const isUsersEvent = eventInfo.event.extendedProps.isUsersEvent;
-        
+
           return (
             <div
               title={`Title: ${eventInfo.event.title}\n${
                 isCanceled ? "This event has been canceled.\n" : ""
               }Location: ${eventInfo.event.extendedProps.location || "Not specified"}`}
+              className="relative w-full overflow-hidden whitespace-nowrap"
             >
               <div className="flex items-center">
-                {isUsersEvent && (
-                  <span className="text-yellow-300 mr-1">★</span> 
-                )}
+                {isUsersEvent && <span className="text-yellow-300 mr-1">★</span>}
                 <span
-                  className={`${
+                  className={`block ${
                     isCanceled
-                      ? "text-white line-through decoration-red-500 decoration-3"
+                      ? "line-through decoration-red-500 decoration-3"
                       : ""
-                  }`}
+                  } overflow-hidden text-ellipsis`}
                 >
                   {eventInfo.timeText} {eventInfo.event.title}
                 </span>
               </div>
             </div>
           );
-        }}        
+        }}
       />
     </div>
 

@@ -6,6 +6,7 @@ import { getEventsWithStatistics } from '@/lib/event';
 import { EventStats } from '@/types/eventStats';
 import { Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
+import withAuthGuard from '@/guard/authGuard';
 
 const AttendanceDashboard = () => {
   const [events, setEvents] = useState<EventStats[]>([]);
@@ -33,13 +34,18 @@ const AttendanceDashboard = () => {
   }
 
   if (error) {
-    return <p>Error: {error}</p>;
+    return (
+      <div className="error-container p-6 bg-light-green min-h-screen">
+        <p className="error-message">You haven't organized any events yet.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="container p-6 bg-light-green dark:bg-gray-900 min-h-screen">
+    <div className="container p-6 bg-light-green min-h-screen">
       <div className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded shadow-md p-4 mb-6">
       <h2 className="text-2xl font-semibold">Attendance dashboard</h2>
+      <p className="mt-2">See attendance statistics in chart pies. You can click on event cards and see event details.</p>
       </div>
       <div className="card-grid">
         {events.map((eventStat) => (
@@ -78,7 +84,10 @@ const AttendanceDashboard = () => {
                         position: 'bottom',
                       },
                     },
+                    maintainAspectRatio: false,
                   }}
+                  width={300} 
+                  height={300} 
                 />
               )}
             </div>
@@ -123,4 +132,4 @@ const AttendanceDashboard = () => {
   );
 };
 
-export default AttendanceDashboard;
+export default withAuthGuard(AttendanceDashboard);
