@@ -13,7 +13,7 @@ import { createEvent, getFilteredEvents, isUsersEvent } from '@/lib/event';
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
 import { EventData } from '@/types/event';
-import { EVENT_TYPES } from '@/constants/eventTypes';
+import { EVENT_TYPES, calendarEventTypes } from '@/constants/eventTypes';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { getAuthToken } from '@/utilis/authHelpers';
 
@@ -46,14 +46,6 @@ type Filters = {
   type: string;
   search: string;
 };
-
-const calendarEventTypes = [
-  { id: 'Meeting', title: 'Meeting' },
-  { id: 'Workshop', title: 'Workshop' },
-  { id: 'Conference', title: 'Conference' },
-  { id: 'Webinar', title: 'Webinar' },
-  { id: 'Social Event', title: 'Social Event' },
-];
 
 function EventOverview() {
   const router = useRouter();
@@ -186,6 +178,7 @@ function EventOverview() {
       console.error("Error fetching events:", error);
     }
   };
+  
 
   useEffect(() => {
     fetchEvents(); 
