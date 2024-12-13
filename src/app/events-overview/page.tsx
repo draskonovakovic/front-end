@@ -9,7 +9,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import resourceTimelinePlugin from "@fullcalendar/resource-timeline";
 import withAuthGuard from '@/guard/authGuard';
-import { createEvent, getFilteredEvents } from '@/lib/event'; 
+import { createEvent, getFilteredEvents, isUsersEvent } from '@/lib/event'; 
 import socket, { connectSocket, disconnectSocket } from '@/lib/socket';
 import { useRouter } from 'next/navigation';
 import { EventData } from '@/types/event';
@@ -121,7 +121,8 @@ function EventOverview() {
             description: newEvent.description,
             location: newEvent.location,
             type: newEvent.type,
-            active: newEvent.active
+            active: newEvent.active,
+            isUsersEvent: true
           },
         },
       ]);
@@ -136,31 +137,45 @@ function EventOverview() {
   const fetchEvents = async () => {
     try {
       const data = await getFilteredEvents(filters);
-      const formattedEvents = data
-        .filter((event: EventData) => {
-          return event.id && event.title && event.date_time && event.description && event.location && event.type;
-        })
-        .map((event: EventData) => {
-          const startTime = new Date(event.date_time);
-          const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
   
-          return {
-            id: event.id.toString(),
-            title: event.title,
-            start: startTime.toISOString(),
-            end: endTime.toISOString(), 
-            resourceId: event.type,
-            extendedProps: {
-              description: event.description,
-              location: event.location,
-              type: event.type,
-              active: event.active
-            },
-          };
-        });
+      const formattedEvents = await Promise.all(
+        data
+          .filter((event: EventData) => {
+            return (
+              event.id &&
+              event.title &&
+              event.date_time &&
+              event.description &&
+              event.location &&
+              event.type
+            );
+          })
+          .map(async (event: EventData) => {
+            const startTime = new Date(event.date_time);
+            const endTime = new Date(startTime.getTime() + 5 * 60 * 60 * 1000); 
+  
+            const isUserEvent = await isUsersEvent(event.id); 
+  
+            return {
+              id: event.id.toString(),
+              title: event.title,
+              start: startTime.toISOString(),
+              end: endTime.toISOString(),
+              resourceId: event.type,
+              extendedProps: {
+                description: event.description,
+                location: event.location,
+                type: event.type,
+                active: event.active,
+                isUsersEvent: isUserEvent, 
+              },
+            };
+          })
+      );
+  
       setEvents(formattedEvents);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error("Error fetching events:", error);
     }
   };
   
@@ -234,13 +249,13 @@ function EventOverview() {
       const upcomingEvents = events.filter((event) => {
         if (!event.start) {
           console.warn("Event is missing a 'start' property:", event);
-          return null;
+          return false;
         }
   
         const eventDate = new Date(event.start);
         if (isNaN(eventDate.getTime())) {
           console.warn("Invalid event date format:", event.start);
-          return null;
+          return false;
         }
   
         return eventDate > new Date() && event.extendedProps?.active !== false; 
@@ -380,10 +395,13 @@ function EventOverview() {
           Events displayed in <span className="text-green-600">green</span> are active and scheduled.
         </li>
         <li>
+          Events displayed in <span className="text-gray-600">gray</span> are finished.
+        </li>
+        <li>
           Events with a <span className="line-through decoration-red-500 decoration-2">red strikethrough</span> are canceled.
         </li>
         <li>
-          Click on an event to see detailed information about it.
+          Click on an event to see detailed information about it. Events you have organized are displayed with <span className="text-yellow-300">★</span>.
         </li>
       </ul>
       <FullCalendar
@@ -393,6 +411,10 @@ function EventOverview() {
         resourceAreaHeaderContent="Event Types"
         resources={calendarEventTypes}
         events={events}
+        eventClassNames={(eventInfo) => {
+          const isPastEvent = eventInfo.event.end ? new Date(eventInfo.event.end) < new Date() : false;
+          return isPastEvent ? ['past-event'] : [];
+        }}
         eventClick={handleEventClick}
         headerToolbar={{
           left: 'prev,next resourceTimelineDay',
@@ -408,15 +430,23 @@ function EventOverview() {
         nowIndicator={true}
         eventContent={(eventInfo) => {
           const isCanceled = eventInfo.event.extendedProps.active === false;
+          const isUsersEvent = eventInfo.event.extendedProps.isUsersEvent;
+
           return (
             <div
               title={`Title: ${eventInfo.event.title}\n${
                 isCanceled ? "This event has been canceled.\n" : ""
               }Location: ${eventInfo.event.extendedProps.location || "Not specified"}`}
+              className="relative w-full overflow-hidden whitespace-nowrap"
             >
               <div className="flex items-center">
+                {isUsersEvent && <span className="text-yellow-300 mr-1">★</span>}
                 <span
-                  className={`${isCanceled ? "text-white line-through decoration-red-500 decoration-3" : ""}`}
+                  className={`block ${
+                    isCanceled
+                      ? "line-through decoration-red-500 decoration-3"
+                      : ""
+                  } overflow-hidden text-ellipsis`}
                 >
                   {eventInfo.timeText} {eventInfo.event.title}
                 </span>

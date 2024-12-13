@@ -60,6 +60,18 @@ export const cancelEvent = async (id: number) => {
   }
 }
 
+export const isUsersEvent = async (id: number) => {
+  try {
+    const response = await api.get(`/events/check/${id}`);
+    if (!response || !response.data) {
+      throw new Error("Unexpected response: Response or data is undefined.");
+    }
+    return response.data.data;
+  } catch (error: any){
+    throw new Error(error.message || "An error occured while checking event")
+  }
+}
+
 export const getFilteredEvents = async (data: { date: string; active: string; type: string; search: string; }) => {
   try {
       const response = await api.get('/events/filter', {
@@ -78,6 +90,18 @@ export const getFilteredEvents = async (data: { date: string; active: string; ty
       return response.data.data;
   } catch (error: any) {
       throw new Error(error.message || "An error occurred while filtering events.");
+  }
+}
+
+export const getEventsWithStatistics = async () => {
+  try {
+    const response = await api.get("/events/dashboard/attendance");
+    if (!response || !response.data) {
+      throw new Error("Unexpected response: Response or data is undefined.");
+    }
+    return response.data.data;
+  } catch (error: any) {
+    throw new Error(error.message || "An error occurred while getting events with statistics.");
   }
 };
 

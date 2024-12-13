@@ -1,4 +1,3 @@
-// root-layout.tsx
 'use client';
 
 import { AuthProvider, useAuth } from "@/context/AuthContext";

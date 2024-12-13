@@ -1,14 +1,44 @@
 'use client';
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAuthToken } from "@/utilis/authHelpers";
 
 export default function Home() {
   const router = useRouter();
+  const searchParams = useSearchParams(); 
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
+  useEffect(() => {
+    const invitationAccepted = searchParams.get('invitationAccepted') === 'true';
+    const invitationDecline = searchParams.get('invitationDeclined') === 'true';
+    const eventId = searchParams.get('eventId');
+
+    if (invitationAccepted || invitationDecline) {
+      if (getAuthToken()) {
+        if (invitationAccepted) {
+          router.push(`/event-details/${eventId}?invitationAccepted=true`);
+        } else {
+          router.push(`/event-details/${eventId}?invitationDeclined=true`); 
+        }
+      } else {
+        setModalMessage(
+          invitationAccepted
+            ? "Invitation Successfully Accepted!"
+            : "Invitation Successfully Declined."
+        );
+        setModalVisible(true);
+      }
+    }
+  }, [searchParams]);
 
   const handleRedirect = () => {
     router.push('/login');
   };
+
+  const closeModal = () => setModalVisible(false);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -19,6 +49,21 @@ export default function Home() {
           <p className="mt-2 text-xl">Plan your events with style and ease!</p>
         </div>
       </section>
+
+      {/* Modal za potvrdu prihvatanja ili odbijanja pozivnice */}
+      {modalVisible && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-md max-w-sm w-full text-center">
+            <p className="text-xl font-semibold">{modalMessage}</p>
+            <button 
+              onClick={closeModal}
+              className="mt-4 bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* About section */}
       <section className="py-12 px-4">
