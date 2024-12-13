@@ -19,21 +19,25 @@ export default function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     try {
-      const response = await loginUser(data); 
+      const response = await loginUser(data);
       console.log('Login successful:', response);
-
-      login(); 
+  
+      login();
       router.push('/events-overview');
-    } catch (error: any) {
-      console.error(error); 
-
-      if (error.message.includes('401')) {
-        alert('Incorrect email or password.');
-      } else if (error.message.includes('404')) {
-        alert('User not found. Please check your email.');
-      } else {
-        alert('An unexpected error occurred. Please try again later.');
+    } catch (error: unknown) {
+      console.error(error);
+  
+      let errorMessage = 'An unexpected error occurred. Please try again later.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('401')) {
+          errorMessage = 'Incorrect email or password.';
+        } else if (error.message.includes('404')) {
+          errorMessage = 'User not found. Please check your email.';
+        }
       }
+  
+      alert(errorMessage);
     }
   };
 
