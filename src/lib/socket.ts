@@ -4,9 +4,6 @@ const token = localStorage.getItem('authToken');
 
 export const socket: Socket = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:5000', {
   autoConnect: false,
-  extraHeaders: {
-    Authorization: `Bearer ${token}`, 
-  },
 });
 
 if (socket) {
@@ -24,10 +21,16 @@ if (socket) {
 }
 
 export const connectSocket = () => {
-  if (!socket) {
-    console.warn('Socket is undefined. Cannot connect.');
+  const token = localStorage.getItem('authToken'); 
+  if (!token) {
+    console.error('No auth token available. Cannot connect to WebSocket.');
     return;
   }
+
+  socket.io.opts.extraHeaders = {
+    Authorization: `Bearer ${token}`,
+  };
+
   if (!socket.connected) {
     socket.connect();
   }

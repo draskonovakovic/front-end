@@ -25,7 +25,6 @@ export default function LoginPage() {
       login();
       router.push('/events-overview');
     } catch (error: unknown) {
-      console.error(error);
   
       let errorMessage = 'An unexpected error occurred. Please try again later.';
       

@@ -7,11 +7,14 @@ import { EventStats } from '@/types/eventStats';
 import { Pie } from 'react-chartjs-2';
 import 'chart.js/auto';
 import withAuthGuard from '@/guard/authGuard';
+import { STORAGE_KEYS } from '@/constants/storageKeys';
+import { getAuthToken } from '@/utilis/authHelpers';
 
 const AttendanceDashboard = () => {
   const [events, setEvents] = useState<EventStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false); 
   const router = useRouter();
 
   useEffect(() => {

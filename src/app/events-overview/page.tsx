@@ -67,42 +67,6 @@ function EventOverview() {
   } = useForm<FormData>({ mode: 'onBlur' });
 
   useEffect(() => {
-    const token = getAuthToken();
-    setIsAuthenticated(!!token);
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
-        setIsAuthenticated(false);
-        router.replace('/login');
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [router]);
-
-  useEffect(() => {
-    const token = getAuthToken();
-    setIsAuthenticated(!!token);
-
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
-        setIsAuthenticated(false);
-        router.replace('/login');
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [router]);
-
-  useEffect(() => {
     connectSocket();
   
     socket.on('newEvent', (newEvent: EventData) => {

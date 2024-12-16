@@ -3,6 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { registerUser } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 type FormData = {
   firstName: string;
@@ -22,6 +23,7 @@ export default function RegisterPage() {
   } = useForm<FormData>({
     mode: "onBlur",  
   });
+  const router = useRouter();
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -39,6 +41,7 @@ export default function RegisterPage() {
 
       console.log("Registration successful:", response);
       alert("Registration successful!"); 
+      router.push('/login');
     } catch (error: any) {
       alert(error.message); 
     }
