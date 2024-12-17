@@ -286,6 +286,7 @@ function EventDetails() {
       </div>
 
       {/* Buttons */}
+      {/* Buttons */}
       <div className="mt-4 flex space-x-4">
         <button
           onClick={handleUpdateClick}
