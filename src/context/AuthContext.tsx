@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { logoutUser } from '@/lib/auth';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 import { clearAuthToken, getAuthToken } from '@/utilis/authHelpers';
+import { useRouter } from 'next/navigation';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
@@ -15,7 +16,8 @@ const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  const router = useRouter();
+  
   useEffect(() => {
     const token = getAuthToken();
     setIsAuthenticated(!!token);
@@ -23,6 +25,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === STORAGE_KEYS.AUTH_TOKEN) {
         setIsAuthenticated(!!event.newValue);
+        router.replace('/login');
       }
     };
 

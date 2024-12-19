@@ -41,8 +41,6 @@ function EventDetails() {
     }
   }, [searchParams]);
   
-  const closeModal = () => setModalVisible(false);
-
   const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,14 +70,6 @@ function EventDetails() {
       return 'Invalid date';
     }
   };
-  
-
-  const handleStorageChange = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEYS.AUTH_TOKEN && !event.newValue) {
-      setIsAuthenticated(false);
-      router.replace('/login');
-    }
-  };
 
   useEffect(() => {
     connectSocket();
@@ -87,11 +77,7 @@ function EventDetails() {
     socket.on('updatedEvent', (updatedEvent: EventData) => {
       setEvent(updatedEvent)
     });
-  
-    return () => {
-      socket.off('updatedEvent');
-      disconnectSocket();
-    };
+
   }, []);
 
   const fetchEventData = async (eventId: string | string[]) => {
@@ -304,9 +290,9 @@ function EventDetails() {
       <div className="mt-4 flex space-x-4">
         <button
           onClick={handleUpdateClick}
-          disabled={!isCreator}
+          disabled={!isCreator || !event.active}
           className={`px-4 py-2 rounded flex items-center ${
-            isCreator ? 'bg-green-600 text-white hover:bg-green-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            (isCreator && event.active) ? 'bg-green-600 text-white hover:bg-green-400' : 'bg-gray-400 text-gray-200 cursor-not-allowed'
           }`}
         >
           <span className="mr-2">✏️</span> Update Event
@@ -498,66 +484,94 @@ function EventDetails() {
         )}
 
         {isInvitationModalOpen && (
-            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
-              <div className="bg-white p-6 rounded shadow-md w-full max-w-lg">
-                <h2 className="text-2xl font-semibold mb-4 text-gray-800">Send Invitations</h2>
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex justify-center items-center">
+            <div className="bg-white p-6 rounded shadow-md w-full max-w-lg">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-800">Send Invitations</h2>
 
-                {/* Search input */}
-                <div className="mb-4">
-                  <input
-                    type="text"
-                    placeholder="Search users..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
-                  />
-                </div>
+              {/* Search input */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:ring-blue-300"
+                />
+              </div>
 
-                {/* User list */}
-                <div className="space-y-2 max-h-64 overflow-y-auto border rounded p-2">
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <div key={user.id} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id={`user-${user.id}`}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedUsers((prev) => [...prev, user.id]);
-                            } else {
-                              setSelectedUsers((prev) => prev.filter((id) => id !== user.id));
-                            }
-                          }}
-                          className="form-checkbox h-5 w-5 text-blue-600"
-                        />
-                        <label htmlFor={`user-${user.id}`} className="text-gray-700">
-                          {user.name} {user.surname}
-                        </label>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500">No users found.</p>
-                  )}
+              {/* Select All */}
+              {filteredUsers.length > 0 && (
+                <div className="flex items-center justify-between bg-gray-100 p-2 rounded mb-1 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="select-all"
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedUsers(filteredUsers.map((user) => user.id));
+                        } else {
+                          setSelectedUsers([]);
+                        }
+                      }}
+                      checked={
+                        filteredUsers.length > 0 &&
+                        filteredUsers.every((user) => selectedUsers.includes(user.id))
+                      }
+                      className="form-checkbox h-5 w-5 text-blue-600"
+                    />
+                    <label htmlFor="select-all" className="text-gray-700 font-semibold">
+                      Select All
+                    </label>
+                  </div>
                 </div>
+              )}
 
-                {/* Buttons */}
-                <div className="mt-4 flex justify-end space-x-2">
-                  <button
-                    onClick={() => setIsInvitationModalOpen(false)}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-400 focus:outline-none focus:ring focus:ring-gray-300"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSendInvitations}
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300"
-                  >
-                    Send
-                  </button>
-                </div>
+              {/* User list */}
+              <div className="space-y-2 max-h-64 overflow-y-auto border rounded p-2">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <div key={user.id} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={`user-${user.id}`}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedUsers((prev) => [...prev, user.id]);
+                          } else {
+                            setSelectedUsers((prev) => prev.filter((id) => id !== user.id));
+                          }
+                        }}
+                        checked={selectedUsers.includes(user.id)}
+                        className="form-checkbox h-5 w-5 text-blue-600"
+                      />
+                      <label htmlFor={`user-${user.id}`} className="text-gray-700">
+                        {user.name} {user.surname}
+                      </label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500">No users found.</p>
+                )}
+              </div>
+
+              {/* Buttons */}
+              <div className="mt-4 flex justify-end space-x-2">
+                <button
+                  onClick={() => setIsInvitationModalOpen(false)}
+                  className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-400 focus:outline-none focus:ring focus:ring-gray-300"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendInvitations}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300"
+                >
+                  Send
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {modalVisible && (
             <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-50">

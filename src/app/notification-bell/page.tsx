@@ -28,12 +28,10 @@ const NotificationBell = () => {
       setHasNewNotification(true);
     };
 
-    // Dodaj event listener-e
     socket.on('event-reminder', handleEventReminder);
     socket.on('updatedEvent', handleUpdatedEvent);
 
     return () => {
-      // Ukloni event listener-e
       socket.off('event-reminder', handleEventReminder);
       socket.off('updatedEvent', handleUpdatedEvent);
 
